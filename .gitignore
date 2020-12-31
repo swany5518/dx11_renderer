@@ -36,3 +36,5 @@
 *.opendb
 *.ipch
 *.sln
+dx11_renderer/example_renderer.h
+dx11_renderer/example_renderer.cpp
