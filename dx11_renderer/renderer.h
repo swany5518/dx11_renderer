@@ -5,9 +5,15 @@
 #include <cstddef>
 #include <cmath>
 #include <vector>
+#include <map>
 #include <cassert>
 #include <D3DX10.h>
-#include <map>
+#include <D3DX11.h>
+#include <DirectXMath.h>
+
+#pragma comment (lib, "d3d11.lib")
+#pragma comment (lib, "d3dx11.lib")
+#pragma comment (lib, "d3dx10.lib")
 
 #include "shaders.hpp"
 
@@ -32,14 +38,15 @@ struct vec2
 		return x == other.x && y == other.y;
 	}
 
+	// higher y corresponds to a smaller x value
 	bool higher_or_leftmost(const vec2& other) const
 	{
-		return y > other.y || y == other.y && x < other.x;
+		return y < other.y || y == other.y && x < other.x;
 	}
 
 	bool rightmost_or_higher(const vec2& other) const
 	{
-		return x > other.x || x == other.x && y > other.y;
+		return x > other.x || x == other.x && y < other.y;
 	}
 };
 
@@ -87,7 +94,7 @@ struct vertex
 	{}
 
 	vertex(const vec2& pos, const color& rgba) :
-		x(pos.x), y(pos.y), z(0.f),
+		x(pos.x), y(pos.y), z(1.f),
 		r(rgba.r), g(rgba.g), b(rgba.b), a(rgba.a)
 	{}
 
@@ -158,6 +165,8 @@ class renderer
 public:
 	// create a renderer to draw on the given window
 	renderer(HWND hwnd);
+	// testing constructor, remove later or refactor nicely
+	renderer(HWND hwnd, bool should_use_pixel_cords);
 	~renderer();
 
 	// submits the draw list to the gpu for rendering
@@ -214,8 +223,10 @@ private:
 	ID3D11VertexShader*		p_vertex_shader;  // vertex shader ptr
 	ID3D11PixelShader*		p_pixel_shader;   // pixel shader ptr
 	ID3D11Buffer*			p_vertex_buffer;  // vertex buffer ptr
+	ID3D11Buffer*			p_screen_projection_buffer; // screen projection buffer ptr
 
 	draw_list default_draw_list; // default draw list, we should only need 1 draw list. In the future we could add more
+	DirectX::XMMATRIX screen_projection;
 
 	// add a vertex to the draw list
 	void add_vertex(const vertex& vertex, const D3D_PRIMITIVE_TOPOLOGY type);

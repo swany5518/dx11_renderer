@@ -10,7 +10,9 @@ renderer::renderer(HWND hwnd) :
 	p_layout(nullptr),
 	p_vertex_shader(nullptr),
 	p_pixel_shader(nullptr),
-	p_vertex_buffer(nullptr)
+	p_vertex_buffer(nullptr),
+	p_screen_projection_buffer(nullptr),
+	screen_projection()
 {
 	RECT wnd_size{};
 	if (!GetClientRect(hwnd, &wnd_size))
@@ -92,6 +94,130 @@ renderer::renderer(HWND hwnd) :
 	p_device_context->IASetVertexBuffers(0, 1, &p_vertex_buffer, &stride, &offset);
 }
 
+renderer::renderer(HWND hwnd, bool should_use_pixel_cords) :
+	default_draw_list(),
+	p_swapchain(nullptr),
+	p_device_context(nullptr),
+	p_backbuffer(nullptr),
+	p_layout(nullptr),
+	p_vertex_shader(nullptr),
+	p_pixel_shader(nullptr),
+	p_vertex_buffer(nullptr),
+	p_screen_projection_buffer(nullptr),
+	screen_projection()
+{
+	RECT wnd_size{};
+	if (!GetClientRect(hwnd, &wnd_size))
+		handle_error("renderer - failed to get hwnd window size");
+
+	DXGI_SWAP_CHAIN_DESC swapchain_desc;
+	ZeroMemory(&swapchain_desc, sizeof(DXGI_SWAP_CHAIN_DESC));
+
+	swapchain_desc.BufferCount = 1;                                   // one back buffer
+	swapchain_desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;    // use 32-bit color
+	swapchain_desc.BufferDesc.Width = wnd_size.right - wnd_size.left; // set the back buffer width
+	swapchain_desc.BufferDesc.Height = wnd_size.bottom - wnd_size.top;// set the back buffer height
+	swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;     // how swap chain is to be used
+	swapchain_desc.OutputWindow = hwnd;                               // the window to be used
+	swapchain_desc.SampleDesc.Count = 4;                              // how many multisamples
+	swapchain_desc.Windowed = TRUE;                                   // windowed/full-screen mode
+	swapchain_desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;    // allow full-screen switching
+
+	if (FAILED(D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, NULL, NULL, NULL, D3D11_SDK_VERSION,
+		&swapchain_desc, &p_swapchain, &p_device, NULL, &p_device_context)))
+		handle_error("renderer - failed to create device and swapchain");
+
+	ID3D11Texture2D* p_backbuffer_texture;
+	if (FAILED(p_swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&p_backbuffer_texture)))
+		handle_error("renderer - failed to get backbuffer texture");
+
+	if (FAILED(p_device->CreateRenderTargetView(p_backbuffer_texture, NULL, &p_backbuffer)))
+		handle_error("renderer - failed to create render target view");
+
+	p_backbuffer_texture->Release();
+
+	p_device_context->OMSetRenderTargets(1, &p_backbuffer, NULL);
+
+	// Set the viewport
+	D3D11_VIEWPORT viewport;
+	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+	viewport.Width = wnd_size.right - wnd_size.left;
+	viewport.Height = wnd_size.bottom - wnd_size.top;
+	viewport.MinDepth = 0.f;
+	viewport.MaxDepth = 1.f;
+
+	p_device_context->RSSetViewports(1, &viewport);
+
+	if (FAILED(p_device->CreateVertexShader(shader::trial_vertex, sizeof(shader::trial_vertex), NULL, &p_vertex_shader)))
+		handle_error("renderer - failed to create vertex shader");
+
+	if (FAILED(p_device->CreatePixelShader(shader::trial_pixel, sizeof(shader::trial_pixel), NULL, &p_pixel_shader)))
+		handle_error("renderer - failed to create pixel shader");
+
+	// set the shader objects
+	p_device_context->VSSetShader(p_vertex_shader, 0, 0);
+	p_device_context->PSSetShader(p_pixel_shader, 0, 0);
+
+	// create the input layout object
+	D3D11_INPUT_ELEMENT_DESC input_elem_desc[] =
+	{
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+	};
+
+	if (FAILED(p_device->CreateInputLayout(input_elem_desc, 2, shader::vertex, sizeof(shader::vertex), &p_layout)))
+		handle_error("renderer - failed to create input layout");
+
+	// create the vertex buffer
+	D3D11_BUFFER_DESC bd;
+	ZeroMemory(&bd, sizeof(bd));
+
+	bd.Usage = D3D11_USAGE_DYNAMIC;							// write access access by CPU and GPU
+	bd.ByteWidth = sizeof(vertex) * MAX_DRAW_LIST_VERTICES; // size is the VERTEX struct * max vertices
+	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;				// use as a vertex buffer
+	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;				// allow CPU to write in buffer
+
+	if (FAILED(p_device->CreateBuffer(&bd, NULL, &p_vertex_buffer)))	// create the buffer
+		handle_error("renderer - failed to create vertex buffer");
+
+	// create the screen projection buffer
+	D3D11_BUFFER_DESC projection_buffer_desc;
+	ZeroMemory(&projection_buffer_desc, sizeof(projection_buffer_desc));
+	projection_buffer_desc.Usage = D3D11_USAGE_DYNAMIC;
+	projection_buffer_desc.ByteWidth = sizeof(DirectX::XMMATRIX);
+	projection_buffer_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	projection_buffer_desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	projection_buffer_desc.MiscFlags = 0;
+
+	if (FAILED(p_device->CreateBuffer(&projection_buffer_desc, nullptr, &p_screen_projection_buffer)))
+		handle_error("renderer - failed to create screen projection buffer");
+
+	D3D11_VIEWPORT viewport_test{};
+	UINT num_viewports_test = 1;
+	p_device_context->RSGetViewports(&num_viewports_test, &viewport_test);
+	// calculate the screen projection from the buffer
+	screen_projection = DirectX::XMMatrixOrthographicOffCenterLH(viewport.TopLeftX, viewport.Width, viewport.Height, viewport.TopLeftY, viewport.MinDepth, viewport.MaxDepth);
+
+	// map the screen projection in
+	D3D11_MAPPED_SUBRESOURCE projection_map_subresource;
+	if (FAILED(p_device_context->Map(p_screen_projection_buffer, NULL, D3D11_MAP_WRITE_DISCARD, 0, &projection_map_subresource)))
+		handle_error("renderer - failed to map screen projection buffer");
+
+	memcpy(projection_map_subresource.pData, &screen_projection, sizeof(DirectX::XMMATRIX));
+
+	p_device_context->Unmap(p_screen_projection_buffer, NULL);
+
+	// set the screen projection buffer constant
+	p_device_context->VSSetConstantBuffers(0, 1, &p_screen_projection_buffer);
+	p_device_context->IASetInputLayout(p_layout);
+
+	UINT stride = sizeof(vertex);
+	UINT offset = 0;
+	p_device_context->IASetVertexBuffers(0, 1, &p_vertex_buffer, &stride, &offset);
+}
+
 renderer::~renderer()
 {
 	if (p_swapchain)
@@ -105,8 +231,7 @@ renderer::~renderer()
 	safe_release(p_vertex_shader);
 	safe_release(p_pixel_shader);
 	safe_release(p_vertex_buffer);
-
-
+	safe_release(p_screen_projection_buffer);
 }
 
 void renderer::add_vertex(const vertex& vertex, const D3D_PRIMITIVE_TOPOLOGY type)
@@ -185,8 +310,8 @@ void renderer::add_line(const vec2& start, const vec2& end, const color& color)
 {
 	vertex vertices[] =
 	{
-		{start, color },
-		{end,   color }
+		vertex{start, color },
+		vertex{end,   color },
 	};
 
 	add_vertices(vertices, sizeof(vertices) / sizeof(vertex), D3D_PRIMITIVE_TOPOLOGY_LINELIST);
@@ -412,8 +537,8 @@ void renderer::add_circle(const vec2& middle, float radius, const color& color, 
 	
 	for (auto& vertex : vertices)
 	{
-		vertex += middle;
 		vertex *= radius;
+		vertex += middle;
 	}
 
 	add_vertices(vertices.data(), vertices.size(), D3D_PRIMITIVE_TOPOLOGY_LINESTRIP);
@@ -439,8 +564,9 @@ void renderer::add_circle_filled(const vec2& middle, float radius, const color& 
 	{
 		// vertices 1, 2 and 3 need to be added first
 		auto theta_1 = calc_theta(0, segments);
-		auto theta_2 = calc_theta(segments - 1, segments);
-		auto theta_3 = calc_theta(1, segments);
+		auto theta_2 = calc_theta(1, segments);
+		auto theta_3 = calc_theta(segments - 1, segments);
+		
 		vertices.emplace_back(vec2{cos(theta_1), sin(theta_1)}, color);
 		vertices.emplace_back(vec2{cos(theta_2), sin(theta_2)}, color);
 		vertices.emplace_back(vec2{cos(theta_3), sin(theta_3)}, color);
@@ -449,7 +575,7 @@ void renderer::add_circle_filled(const vec2& middle, float radius, const color& 
 		for (auto list_place = 4u; list_place <= segments; ++list_place)
 		{
 			// calculate where on the circle the vertex needs to calculated from vertex order for 8 segments the clockwise order is goes 1,2,4,6,8,7,5,3
-			auto vertex_n = list_place % 2 == 0 ? segments - list_place / 2: list_place / 2;
+			auto vertex_n = list_place % 2 != 0 ? segments - list_place / 2 : list_place / 2;
 			auto theta_n = calc_theta(vertex_n, segments);
 			vertices.emplace_back(vec2{cos(theta_n), sin(theta_n)}, color);
 		}
@@ -462,8 +588,8 @@ void renderer::add_circle_filled(const vec2& middle, float radius, const color& 
 	// account for middle position and multiply our unit circle scaled vertices by the radius to get correct size 
 	for (auto& vertex : vertices)
 	{
-		vertex += middle;
 		vertex *= radius;
+		vertex += middle;
 	}
 	
 	add_vertices(vertices.data(), vertices.size(), D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);

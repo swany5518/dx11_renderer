@@ -38,3 +38,16 @@
 *.sln
 dx11_renderer/example_renderer.h
 dx11_renderer/example_renderer.cpp
+*.recipe
+*.log
+*.tlog
+*.enc
+*.idb
+*.pdb
+*.ilk
+*.iobj
+*.ipdb
+.vs/dx11_renderer/v16/.suo
+.vs/dx11_renderer/v16/.suo
+.vs/dx11_renderer/v16/.suo
+.vs/dx11_renderer/v16/.suo
