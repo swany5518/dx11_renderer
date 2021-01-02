@@ -38,6 +38,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = hInstance;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    //wc.hbrBackground = (HBRUSH)GetSysColor(COLOR_GRAYTEXT);
     wc.lpszClassName = L"WindowClass";
 
     RegisterClassEx(&wc);
@@ -45,7 +46,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     RECT wr = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
     AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
 
-    hWnd = CreateWindowEx(NULL, L"WindowClass", L"prism's first dx11 program", WS_OVERLAPPEDWINDOW, 300, 300, wr.right - wr.left, wr.bottom - wr.top, NULL, NULL, hInstance, NULL);
+    hWnd = CreateWindowEx(WS_EX_TRANSPARENT, L"WindowClass", L"prism's first dx11 program", WS_POPUP, 300, 300, wr.right - wr.left, wr.bottom - wr.top, NULL, NULL, hInstance, NULL);
     ShowWindow(hWnd, nCmdShow);
 
     renderer renderer{ hWnd, true };
@@ -72,7 +73,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         static vec2 size{ 100.f, 100.f };
         static vec2 pos{ 0.f, 0.f };
         //renderer.add_rect_filled_multicolor(top_left, size, red, red, yellow, yellow);
-        renderer.add_triangle_filled_multicolor({ 300.f, 300.f }, { 450.f, 100.f }, top_left, yellow, blue, green);
+        //renderer.add_triangle_filled_multicolor({ 300.f, 300.f }, { 450.f, 100.f }, top_left, yellow, blue, green);
+        renderer.add_text({ 0.f, 0.f }, L"lmaoooooo", blue, 10.f);
 
         //renderer.add_3d_wire_frame(top_left, { .3f, -.8f, .15f }, blue);
 
@@ -83,8 +85,24 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     }
 }
 
+uint32_t to_hex(float r, float g, float b, float a)
+{
+    uint32_t hex{};
+    hex |= static_cast<uint32_t>(a * 255) << 0;
+    hex |= static_cast<uint32_t>(b * 255) << 8;
+    hex |= static_cast<uint32_t>(g * 255) << 16;
+    hex |= static_cast<uint32_t>(r * 255) << 24;
+
+    return hex;
+}
+
 int main()
 {
+    auto h = to_hex(.2f, 0.3f, 1.f, 0.4f);
+
+    printf("0x%lx", h);
+    getchar();
+    exit(0);
     ID3DBlob* blob = nullptr;
     D3DCompile(shader::shader, sizeof(shader::shader), nullptr, nullptr, nullptr, "PS", "ps_4_0", 0, 0, &blob, nullptr);
     size_t size = blob->GetBufferSize();

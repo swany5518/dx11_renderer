@@ -51,3 +51,5 @@ dx11_renderer/example_renderer.cpp
 .vs/dx11_renderer/v16/.suo
 .vs/dx11_renderer/v16/.suo
 .vs/dx11_renderer/v16/.suo
+.vs/dx11_renderer/v16/.suo
+*.exp

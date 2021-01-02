@@ -5,11 +5,13 @@
 #include <cstddef>
 #include <cmath>
 #include <vector>
-#include <map>
+#include <string>
+#include <unordered_map>
 #include <cassert>
 #include <D3DX10.h>
 #include <D3DX11.h>
 #include <DirectXMath.h>
+#include "../FW1FontWrapper/Source/FW1FontWrapper.h"
 
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dx11.lib")
@@ -75,6 +77,18 @@ struct color
 		g += amount;
 		b += amount;
 	}
+
+	// convert float 4 rgba to uint32 hex abgr
+	uint32_t to_hex_abgr() const
+	{
+		uint32_t hex{};
+		hex |= static_cast<uint32_t>(a * 255) << 0;
+		hex |= static_cast<uint32_t>(b * 255) << 8;
+		hex |= static_cast<uint32_t>(g * 255) << 16;
+		hex |= static_cast<uint32_t>(r * 255) << 24;
+
+		return hex;
+	}
 };
 
 // a struct that contains position and color information that the gpu will process
@@ -139,24 +153,51 @@ struct batch
 	uint32_t vertex_count;
 };
 
+// function for safely releasing com object pointers
+template <typename T>
+inline void safe_release(T com_ptr)
+{
+	static_assert(std::is_pointer<T>::value, "safe_release - invalid com_ptr");
+	static_assert(std::is_base_of<IUnknown, std::remove_pointer<T>::type>::value, "safe_release - com_ptr not a com object");
+	if (com_ptr)
+	{
+		com_ptr->Release();
+		com_ptr = 0;
+	}
+}
+
 // holds a vertex buffer and a batch list that our renderer will use
 class draw_list
 {
 	friend class renderer;
 public:
-	draw_list()
+	draw_list() :
+		vertices(),
+		batch_list(),
+		p_text_geometry(nullptr)
 	{}
 
 	void clear()
 	{
 		vertices.clear();
 		batch_list.clear();
+		p_text_geometry->Clear();
+	}
+
+	HRESULT init_text_geometry(IFW1Factory* font_factory)
+	{
+		return font_factory->CreateTextGeometry(&p_text_geometry);
+	}
+
+	~draw_list()
+	{
+		safe_release(p_text_geometry);
 	}
 
 private:
 	std::vector<vertex> vertices;
 	std::vector<batch> batch_list;
-
+	IFW1TextGeometry* p_text_geometry;
 };
 
 // provides a directx api to easily render primitives
@@ -202,7 +243,7 @@ public:
 	// add a filled circle
 	void add_circle_filled(const vec2& middle, float radius, const color& box_color, size_t segments);
 
-	// add a frame
+	// add a thin frame made out of rects
 	void add_frame(const vec2& top_left, const vec2& size, float thickness, const color& frame_color);
 
 	// add a wire frame (constructs frame from lines instead of rects)
@@ -214,6 +255,9 @@ public:
 	// add an outlined frame
 	void add_outlined_frame(const vec2& top_left, const vec2& size, float thickness, float outline_thickness, const color& color_, const color& outline_color);
 
+	// add text 
+	void add_text(const vec2& pos, const std::wstring& text, const color& color, float font_size, uint32_t text_flags = NULL);
+
 private:
 	IDXGISwapChain*			p_swapchain;      // swapchain ptr
 	ID3D11Device*			p_device;         // d3d device interface ptr
@@ -224,6 +268,10 @@ private:
 	ID3D11PixelShader*		p_pixel_shader;   // pixel shader ptr
 	ID3D11Buffer*			p_vertex_buffer;  // vertex buffer ptr
 	ID3D11Buffer*			p_screen_projection_buffer; // screen projection buffer ptr
+
+	IFW1Factory*			p_font_factory; // font factory ptr
+	IFW1FontWrapper*		p_font_wrapper;  // font wrapper ptr
+	const std::wstring		font_family = L"Arial";
 
 	draw_list default_draw_list; // default draw list, we should only need 1 draw list. In the future we could add more
 	DirectX::XMMATRIX screen_projection;
@@ -237,19 +285,6 @@ private:
 	// process errors coming from the renderer
 	void handle_error(const char* );
 };
-
-// function for safely releasing com object pointers
-template <typename T>
-inline void safe_release(T com_ptr)
-{
-	static_assert(std::is_pointer<T>::value, "safe_release - invalid com_ptr");
-	static_assert(std::is_base_of<IUnknown, std::remove_pointer<T>::type>::value, "safe_release - com_ptr not a com object");
-	if (com_ptr)
-	{
-		com_ptr->Release();
-		com_ptr = 0;
-	}
-}
 
 // function for calculating a circles vertex position
 inline float calc_theta(int vertex_index, size_t total_points)

@@ -104,7 +104,9 @@ renderer::renderer(HWND hwnd, bool should_use_pixel_cords) :
 	p_pixel_shader(nullptr),
 	p_vertex_buffer(nullptr),
 	p_screen_projection_buffer(nullptr),
-	screen_projection()
+	screen_projection(),
+	p_font_factory(nullptr),
+	p_font_wrapper(nullptr)
 {
 	RECT wnd_size{};
 	if (!GetClientRect(hwnd, &wnd_size))
@@ -216,6 +218,17 @@ renderer::renderer(HWND hwnd, bool should_use_pixel_cords) :
 	UINT stride = sizeof(vertex);
 	UINT offset = 0;
 	p_device_context->IASetVertexBuffers(0, 1, &p_vertex_buffer, &stride, &offset);
+
+	if (FAILED(FW1CreateFactory(FW1_VERSION, &p_font_factory)))
+		handle_error("renderer - failed to create font factory");
+
+	if (FAILED(default_draw_list.init_text_geometry(p_font_factory)))
+		handle_error("renderer - failed to init text geometry");
+
+	if (FAILED(p_font_factory->CreateFontWrapper(p_device, L"Verdana", &p_font_wrapper)))
+		handle_error("renderer - failed to create font wrapper");
+
+	//p_font_wrapper->DrawString(p_device_context, L"", 0.0f, 0.0f, 0.0f, 0xff000000, FW1_RESTORESTATE | FW1_NOFLUSH);
 }
 
 renderer::~renderer()
@@ -232,6 +245,8 @@ renderer::~renderer()
 	safe_release(p_pixel_shader);
 	safe_release(p_vertex_buffer);
 	safe_release(p_screen_projection_buffer);
+	safe_release(p_font_factory);
+	safe_release(p_font_wrapper);
 }
 
 void renderer::add_vertex(const vertex& vertex, const D3D_PRIMITIVE_TOPOLOGY type)
@@ -277,33 +292,43 @@ void renderer::add_vertices(const vertex* p_vertices, const size_t vertex_count,
 
 void renderer::draw()
 {
-	// no need to draw 0 vertices
-	if (!default_draw_list.vertices.size())
-		return;
-
-	float background[] = { 1.f, 1.f, 1.f, 1.f };
-	p_device_context->ClearRenderTargetView(p_backbuffer, background);
-
-	// map our vertex buffer 
-	D3D11_MAPPED_SUBRESOURCE mapped_resource;
-	if (FAILED(p_device_context->Map(p_vertex_buffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &mapped_resource)))
-		return;
-
-	// copy our vertex buffer and unmap
-	memcpy(mapped_resource.pData, default_draw_list.vertices.data(), default_draw_list.vertices.size() * sizeof(vertex));
-	p_device_context->Unmap(p_vertex_buffer, NULL);
-
-	// iterate each batch and draw it with the respective primitive type
-	size_t buffer_index = 0;
-	for (auto& batch : default_draw_list.batch_list)
+	// only draw draw list vertices if size > 0
+	if (default_draw_list.vertices.size())
 	{
-		p_device_context->IASetPrimitiveTopology(batch.type);
-		p_device_context->Draw(batch.vertex_count, buffer_index);
-		buffer_index += batch.vertex_count;
+		float background[] = { 0.f, 0.f, 0.f, .0f };
+		p_device_context->ClearRenderTargetView(p_backbuffer, background);
+
+		// map our vertex buffer 
+		D3D11_MAPPED_SUBRESOURCE mapped_resource;
+		if (FAILED(p_device_context->Map(p_vertex_buffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &mapped_resource)))
+			return;
+
+		// copy our vertex buffer and unmap
+		memcpy(mapped_resource.pData, default_draw_list.vertices.data(), default_draw_list.vertices.size() * sizeof(vertex));
+		p_device_context->Unmap(p_vertex_buffer, NULL);
+
+		// iterate each batch and draw it with the respective primitive type
+		size_t buffer_index = 0;
+		for (auto& batch : default_draw_list.batch_list)
+		{
+			p_device_context->IASetPrimitiveTopology(batch.type);
+			p_device_context->Draw(batch.vertex_count, buffer_index);
+			buffer_index += batch.vertex_count;
+		}
+		default_draw_list.clear();
 	}
-	default_draw_list.clear();
+
+	p_font_wrapper->Flush(p_device_context);
+	p_font_wrapper->DrawGeometry(p_device_context, default_draw_list.p_text_geometry, nullptr, nullptr, FW1_RESTORESTATE);
 
 	p_swapchain->Present(1, 0);
+}
+
+void renderer::add_text(const vec2& pos, const std::wstring& text, const color& color, float font_size, uint32_t text_flags)
+{
+	FW1_RECTF rect{ pos.x, pos.y, pos.x, pos.y };
+	text_flags |= FW1_NOFLUSH | FW1_NOWORDWRAP;
+	p_font_wrapper->AnalyzeString(nullptr, text.c_str(), L"Verdana", font_size, &rect, 0xFFFFFFFF, text_flags, default_draw_list.p_text_geometry);
 }
 
 void renderer::add_line(const vec2& start, const vec2& end, const color& color)
@@ -514,7 +539,7 @@ void renderer::add_circle(const vec2& middle, float radius, const color& color, 
 		handle_error("add_circle - need at least 4 and less than MAX_DRAW_LIST_VERTICES");
 
 	// for each circle resolution(segments), we only need to calculate the vertex locations once to avoid calling calc_theta(), sin(), and cos() every call
-	static std::map<size_t, std::vector<vertex>> vertex_cache{};
+	static std::unordered_map<size_t, std::vector<vertex>> vertex_cache{};
 
 	// prefill our vertex buffer with segments + 1 vertices
 	std::vector<vertex> vertices{};
@@ -551,7 +576,7 @@ void renderer::add_circle_filled(const vec2& middle, float radius, const color& 
 		handle_error("add_circle_filled - need at least 4 and less than MAX_DRAW_LIST_VERTICES");
 
 	// for each circle resolution(segments), we only need to calculate the vertex locations once to avoid calling calc_theta(), sin(), and cos() every call
-	static std::map<size_t, std::vector<vertex>> vertex_cache{};
+	static std::unordered_map<size_t, std::vector<vertex>> vertex_cache{};
 
 	// declare our vertex list, these will be unit circle coords, multiply by radius and account for middle position to get correct size
 	std::vector<vertex> vertices{};
