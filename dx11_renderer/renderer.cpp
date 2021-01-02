@@ -292,12 +292,12 @@ void renderer::add_vertices(const vertex* p_vertices, const size_t vertex_count,
 
 void renderer::draw()
 {
+	float background[] = { 1.f, 1.f, 1.f, 1.f };
+	p_device_context->ClearRenderTargetView(p_backbuffer, background);
+
 	// only draw draw list vertices if size > 0
 	if (default_draw_list.vertices.size())
 	{
-		float background[] = { 0.f, 0.f, 0.f, .0f };
-		p_device_context->ClearRenderTargetView(p_backbuffer, background);
-
 		// map our vertex buffer 
 		D3D11_MAPPED_SUBRESOURCE mapped_resource;
 		if (FAILED(p_device_context->Map(p_vertex_buffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &mapped_resource)))
@@ -326,9 +326,12 @@ void renderer::draw()
 
 void renderer::add_text(const vec2& pos, const std::wstring& text, const color& color, float font_size, uint32_t text_flags)
 {
+	if (text.empty())
+		return;
+
 	FW1_RECTF rect{ pos.x, pos.y, pos.x, pos.y };
 	text_flags |= FW1_NOFLUSH | FW1_NOWORDWRAP;
-	p_font_wrapper->AnalyzeString(nullptr, text.c_str(), L"Verdana", font_size, &rect, 0xFFFFFFFF, text_flags, default_draw_list.p_text_geometry);
+	p_font_wrapper->AnalyzeString(nullptr, text.c_str(), L"Verdana", font_size, &rect, color.to_hex_abgr(), text_flags, default_draw_list.p_text_geometry);
 }
 
 void renderer::add_line(const vec2& start, const vec2& end, const color& color)

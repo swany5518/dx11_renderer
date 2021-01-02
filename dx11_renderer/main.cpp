@@ -38,7 +38,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = hInstance;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    //wc.hbrBackground = (HBRUSH)GetSysColor(COLOR_GRAYTEXT);
     wc.lpszClassName = L"WindowClass";
 
     RegisterClassEx(&wc);
@@ -46,7 +45,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     RECT wr = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
     AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
 
-    hWnd = CreateWindowEx(WS_EX_TRANSPARENT, L"WindowClass", L"prism's first dx11 program", WS_POPUP, 300, 300, wr.right - wr.left, wr.bottom - wr.top, NULL, NULL, hInstance, NULL);
+    hWnd = CreateWindowEx(NULL, L"WindowClass", L"prism's first dx11 program", WS_OVERLAPPEDWINDOW, 300, 300, wr.right - wr.left, wr.bottom - wr.top, NULL, NULL, hInstance, NULL);
     ShowWindow(hWnd, nCmdShow);
 
     renderer renderer{ hWnd, true };
@@ -75,6 +74,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         //renderer.add_rect_filled_multicolor(top_left, size, red, red, yellow, yellow);
         //renderer.add_triangle_filled_multicolor({ 300.f, 300.f }, { 450.f, 100.f }, top_left, yellow, blue, green);
         renderer.add_text({ 0.f, 0.f }, L"lmaoooooo", blue, 10.f);
+        renderer.add_text({ 200.f, 200.f }, L"added a text renderer", blue, 100.f);
+
 
         //renderer.add_3d_wire_frame(top_left, { .3f, -.8f, .15f }, blue);
 

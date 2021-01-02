@@ -16,6 +16,7 @@
 #pragma comment (lib, "d3d11.lib")
 #pragma comment (lib, "d3dx11.lib")
 #pragma comment (lib, "d3dx10.lib")
+#pragma warning(disable:6387)
 
 #include "shaders.hpp"
 
@@ -82,10 +83,10 @@ struct color
 	uint32_t to_hex_abgr() const
 	{
 		uint32_t hex{};
-		hex |= static_cast<uint32_t>(a * 255) << 0;
-		hex |= static_cast<uint32_t>(b * 255) << 8;
-		hex |= static_cast<uint32_t>(g * 255) << 16;
-		hex |= static_cast<uint32_t>(r * 255) << 24;
+		hex |= static_cast<uint32_t>(a * 255) << 24;
+		hex |= static_cast<uint32_t>(b * 255) << 16;
+		hex |= static_cast<uint32_t>(g * 255) << 8;
+		hex |= static_cast<uint32_t>(r * 255) << 0;
 
 		return hex;
 	}
