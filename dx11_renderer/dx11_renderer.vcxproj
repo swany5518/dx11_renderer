@@ -162,6 +162,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="renderer.h" />
+    <ClInclude Include="renderer_utils.hpp" />
     <ClInclude Include="shaders.hpp" />
   </ItemGroup>
   <ItemGroup>

@@ -48,7 +48,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     hWnd = CreateWindowEx(NULL, L"WindowClass", L"prism's first dx11 program", WS_OVERLAPPEDWINDOW, 300, 300, wr.right - wr.left, wr.bottom - wr.top, NULL, NULL, hInstance, NULL);
     ShowWindow(hWnd, nCmdShow);
 
-    renderer renderer{ hWnd, true };
+    renderer renderer{};
+    renderer.initialize(hWnd);
+
     color red{ 1.f, 0.f, 0.f, 1.f };
     color green{ 0.f, 1.f, 0.f, 1.f };
     color blue{ 0.f, 0.f, 1.f, 1.f };

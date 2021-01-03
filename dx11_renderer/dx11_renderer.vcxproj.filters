@@ -35,5 +35,8 @@
     <ClInclude Include="example_renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="renderer_utils.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
