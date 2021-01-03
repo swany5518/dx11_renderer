@@ -3,25 +3,6 @@
 #include "renderer.h"
 
 //
-// [public] constructors
-//
-
-renderer::renderer() :
-	default_draw_list(),
-	p_swapchain(nullptr),
-	p_device_context(nullptr),
-	p_backbuffer(nullptr),
-	p_layout(nullptr),
-	p_vertex_shader(nullptr),
-	p_pixel_shader(nullptr),
-	p_vertex_buffer(nullptr),
-	p_screen_projection_buffer(nullptr),
-	screen_projection(),
-	p_font_factory(nullptr),
-	p_font_wrapper(nullptr)
-{}
-
-//
 // [public] renderer utilities
 //
 
@@ -593,6 +574,25 @@ void renderer::setup_font_renderer()
 
 	p_font_wrapper->DrawString(p_device_context, L"", 0.0f, 0.0f, 0.0f, 0xff000000, FW1_RESTORESTATE | FW1_NOFLUSH);
 }
+
+//
+// [public] constructors
+//
+
+renderer::renderer() :
+	default_draw_list(),
+	p_swapchain(nullptr),
+	p_device_context(nullptr),
+	p_backbuffer(nullptr),
+	p_layout(nullptr),
+	p_vertex_shader(nullptr),
+	p_pixel_shader(nullptr),
+	p_vertex_buffer(nullptr),
+	p_screen_projection_buffer(nullptr),
+	screen_projection(),
+	p_font_factory(nullptr),
+	p_font_wrapper(nullptr)
+{}
 
 //
 // [private] internal helper functions
