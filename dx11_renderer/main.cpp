@@ -53,7 +53,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
     color red{ 1.f, 0.f, 0.f, .5f };
     color green{ 0.f, 1.f, 0.f, 1.f };
-    color blue{ 0.f, 0.f, 1.f, 1.f };
+    color blue{ 0.f, 0.f, 1.f, 0.5f };
     color black{ 0.f, 0.f, 0.f, 1.f };
     color white{ 1.f, 1.f, 1.f, 1.f };
     color yellow{ 1.f, 1.f, 0.f, 1.f };
@@ -73,13 +73,13 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         static vec2 top_left{ 100.f, 100.f };
         static vec2 size{ 100.f, 100.f };
         static vec2 pos{ 0.f, 0.f };
-        //renderer.add_rect_filled_multicolor(top_left, size, red, red, yellow, yellow);
+        renderer.add_rect_filled_multicolor(top_left, size, red, red, yellow, yellow);
         renderer.add_triangle_filled_multicolor({ 300.f, 300.f }, { 450.f, 100.f }, top_left, yellow, blue, green);
         renderer.add_text({ 0.f, 0.f }, L"lmaoooooo", blue, 10.f);
         renderer.add_text({ 200.f, 200.f }, L"added a text renderer", blue, 100.f);
 
 
-        //renderer.add_3d_wire_frame(top_left, { .3f, -.8f, .15f }, blue);
+        renderer.add_3d_wire_frame(top_left, { 200.f, 200.f, 50.f }, yellow);
 
         //renderer.add_circle_filled({ 500.f, 500.f }, 500.f, red, 32);
         //renderer.add_line(top_left, { 500.f, 500.f }, blue);

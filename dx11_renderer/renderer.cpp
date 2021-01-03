@@ -567,7 +567,9 @@ void renderer::setup_blend_state()
 	blend_desc.RenderTarget->BlendOpAlpha = D3D11_BLEND_OP_ADD;
 	blend_desc.RenderTarget->RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
+
 	p_device->CreateBlendState(&blend_desc, &p_blend_state);
+	p_device_context->OMSetBlendState(p_blend_state, nullptr, 0xFFFFFFFF);
 }
 
 void renderer::setup_screen_projection()
