@@ -51,7 +51,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     renderer renderer{};
     renderer.initialize(hWnd);
 
-    color red{ 1.f, 0.f, 0.f, 1.f };
+    color red{ 1.f, 0.f, 0.f, .5f };
     color green{ 0.f, 1.f, 0.f, 1.f };
     color blue{ 0.f, 0.f, 1.f, 1.f };
     color black{ 0.f, 0.f, 0.f, 1.f };
@@ -74,7 +74,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         static vec2 size{ 100.f, 100.f };
         static vec2 pos{ 0.f, 0.f };
         //renderer.add_rect_filled_multicolor(top_left, size, red, red, yellow, yellow);
-        //renderer.add_triangle_filled_multicolor({ 300.f, 300.f }, { 450.f, 100.f }, top_left, yellow, blue, green);
+        renderer.add_triangle_filled_multicolor({ 300.f, 300.f }, { 450.f, 100.f }, top_left, yellow, blue, green);
         renderer.add_text({ 0.f, 0.f }, L"lmaoooooo", blue, 10.f);
         renderer.add_text({ 200.f, 200.f }, L"added a text renderer", blue, 100.f);
 
@@ -82,30 +82,16 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         //renderer.add_3d_wire_frame(top_left, { .3f, -.8f, .15f }, blue);
 
         //renderer.add_circle_filled({ 500.f, 500.f }, 500.f, red, 32);
-        //renderer.add_line(top_left, { 500.f, 500.f }, red);
+        //renderer.add_line(top_left, { 500.f, 500.f }, blue);
         //renderer.add_line_multicolor({ -.5f, .5f }, blue, { .5f, -.5f }, green);
         renderer.draw();
     }
-}
 
-uint32_t to_hex(float r, float g, float b, float a)
-{
-    uint32_t hex{};
-    hex |= static_cast<uint32_t>(a * 255) << 0;
-    hex |= static_cast<uint32_t>(b * 255) << 8;
-    hex |= static_cast<uint32_t>(g * 255) << 16;
-    hex |= static_cast<uint32_t>(r * 255) << 24;
-
-    return hex;
+    renderer.cleanup();
 }
 
 int main()
 {
-    auto h = to_hex(.2f, 0.3f, 1.f, 0.4f);
-
-    printf("0x%lx", h);
-    getchar();
-    exit(0);
     ID3DBlob* blob = nullptr;
     D3DCompile(shader::shader, sizeof(shader::shader), nullptr, nullptr, nullptr, "PS", "ps_4_0", 0, 0, &blob, nullptr);
     size_t size = blob->GetBufferSize();

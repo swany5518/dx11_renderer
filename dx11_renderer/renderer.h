@@ -67,7 +67,7 @@ public:
 	void draw();
 
 	// initialize renderer onto a window 
-	void initialize(HWND hwnd, std::wstring font = L"Arial");
+	void initialize(HWND hwnd, std::wstring font = L"Verdana");
 
 	// cleanup renderer
 	void cleanup();
@@ -125,7 +125,7 @@ private:
 	ID3D11DeviceContext*	p_device_context; // d3d device context ptr
 	ID3D11RenderTargetView* p_backbuffer;     // backbuffer ptr
 	ID3D11InputLayout*		p_layout;         // layout ptr
-	ID3D11BlendState*	    p_blend_state;
+	ID3D11BlendState*	    p_blend_state;    // blend state ptr
 	ID3D11VertexShader*		p_vertex_shader;  // vertex shader ptr
 	ID3D11PixelShader*		p_pixel_shader;   // pixel shader ptr
 	ID3D11Buffer*			p_vertex_buffer;  // vertex buffer ptr
@@ -133,7 +133,6 @@ private:
 
 	IFW1Factory*			p_font_factory; // font factory ptr
 	IFW1FontWrapper*		p_font_wrapper;  // font wrapper ptr
-	std::wstring		font_family;
 
 	draw_list default_draw_list; // default draw list, we should only need 1 draw list. In the future we could add more
 	DirectX::XMMATRIX screen_projection;
@@ -154,6 +153,7 @@ private:
 	void setup_shaders();
 	void setup_input_layout();
 	void setup_vertex_buffer();
+	void setup_blend_state();
 	void setup_screen_projection();
 	void setup_font_renderer(std::wstring font);
 };

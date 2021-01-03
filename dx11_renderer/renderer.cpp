@@ -14,7 +14,10 @@ void renderer::initialize(HWND hwnd, std::wstring font)
 	setup_shaders();
 	setup_input_layout();
 	setup_vertex_buffer();
+	setup_blend_state();
 	setup_font_renderer(font);
+	setup_screen_projection();
+	//setup_font_renderer(font);
 
 	initialized = true;
 }
@@ -44,18 +47,19 @@ void renderer::draw()
 			p_device_context->Draw(batch.vertex_count, buffer_index);
 			buffer_index += batch.vertex_count;
 		}
-		default_draw_list.clear();
 	}
 
 	p_font_wrapper->Flush(p_device_context);
 	p_font_wrapper->DrawGeometry(p_device_context, default_draw_list.p_text_geometry, nullptr, nullptr, FW1_RESTORESTATE);
+
+	default_draw_list.clear();
 
 	p_swapchain->Present(1, 0);
 }
 
 void renderer::cleanup()
 {
-	initialized = true;
+	initialized = false;
 }
 
 //
@@ -417,6 +421,29 @@ void renderer::add_outlined_frame(const vec2& top_left, const vec2& size, float 
 	
 }
 
+
+//
+// [public] constructors
+//
+
+renderer::renderer() :
+	initialized(false),
+	default_draw_list(),
+	p_swapchain(nullptr),
+	p_device(nullptr),
+	p_device_context(nullptr),
+	p_backbuffer(nullptr),
+	p_blend_state(nullptr),
+	p_layout(nullptr),
+	p_vertex_shader(nullptr),
+	p_pixel_shader(nullptr),
+	p_vertex_buffer(nullptr),
+	p_screen_projection_buffer(nullptr),
+	screen_projection(),
+	p_font_factory(nullptr),
+	p_font_wrapper(nullptr)
+{}
+
 // 
 // [private] directx initialization functions
 //
@@ -527,6 +554,22 @@ void renderer::setup_vertex_buffer()
 	p_device_context->IASetVertexBuffers(0, 1, &p_vertex_buffer, &stride, &offset);
 }
 
+void renderer::setup_blend_state()
+{
+	D3D11_BLEND_DESC blend_desc{};
+
+	blend_desc.RenderTarget->BlendEnable = TRUE;
+	blend_desc.RenderTarget->SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blend_desc.RenderTarget->DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blend_desc.RenderTarget->SrcBlendAlpha = D3D11_BLEND_ONE;
+	blend_desc.RenderTarget->DestBlendAlpha = D3D11_BLEND_ZERO;
+	blend_desc.RenderTarget->BlendOp = D3D11_BLEND_OP_ADD;
+	blend_desc.RenderTarget->BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blend_desc.RenderTarget->RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+	p_device->CreateBlendState(&blend_desc, &p_blend_state);
+}
+
 void renderer::setup_screen_projection()
 {
 	// create the screen projection buffer
@@ -574,28 +617,6 @@ void renderer::setup_font_renderer(std::wstring font)
 
 	p_font_wrapper->DrawString(p_device_context, L"", 0.0f, 0.0f, 0.0f, 0xff000000, FW1_RESTORESTATE | FW1_NOFLUSH);
 }
-
-//
-// [public] constructors
-//
-
-renderer::renderer() :
-	initialized(false),
-	default_draw_list(),
-	p_swapchain(nullptr),
-	p_device(nullptr),
-	p_device_context(nullptr),
-	p_backbuffer(nullptr),
-	p_blend_state(nullptr),
-	p_layout(nullptr),
-	p_vertex_shader(nullptr),
-	p_pixel_shader(nullptr),
-	p_vertex_buffer(nullptr),
-	p_screen_projection_buffer(nullptr),
-	screen_projection(),
-	p_font_factory(nullptr),
-	p_font_wrapper(nullptr)
-{}
 
 //
 // [private] internal helper functions
