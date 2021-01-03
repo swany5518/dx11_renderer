@@ -66,11 +66,11 @@ public:
 	// submits the draw list to the gpu for rendering
 	void draw();
 
-	// initialize renderer onto a window
-	void initialize(HWND hwnd);
+	// initialize renderer onto a window 
+	void initialize(HWND hwnd, std::wstring font = L"Arial");
 
+	// cleanup renderer
 	void cleanup();
-
 
 	// adds a colored line from start to end
 	void add_line(const vec2& start, const vec2& end, const color& color);
@@ -133,7 +133,7 @@ private:
 
 	IFW1Factory*			p_font_factory; // font factory ptr
 	IFW1FontWrapper*		p_font_wrapper;  // font wrapper ptr
-	const std::wstring		font_family = L"Arial";
+	std::wstring		font_family;
 
 	draw_list default_draw_list; // default draw list, we should only need 1 draw list. In the future we could add more
 	DirectX::XMMATRIX screen_projection;
@@ -155,5 +155,5 @@ private:
 	void setup_input_layout();
 	void setup_vertex_buffer();
 	void setup_screen_projection();
-	void setup_font_renderer();
+	void setup_font_renderer(std::wstring font);
 };

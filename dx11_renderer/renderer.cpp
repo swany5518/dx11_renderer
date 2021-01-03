@@ -6,7 +6,7 @@
 // [public] renderer utilities
 //
 
-void renderer::initialize(HWND hwnd)
+void renderer::initialize(HWND hwnd, std::wstring font)
 {
 	setup_device_and_swapchain(hwnd);
 	setup_backbuffer();
@@ -14,7 +14,7 @@ void renderer::initialize(HWND hwnd)
 	setup_shaders();
 	setup_input_layout();
 	setup_vertex_buffer();
-	setup_font_renderer();
+	setup_font_renderer(font);
 
 	initialized = true;
 }
@@ -561,7 +561,7 @@ void renderer::setup_screen_projection()
 	p_device_context->VSSetConstantBuffers(0, 1, &p_screen_projection_buffer);
 }
 
-void renderer::setup_font_renderer()
+void renderer::setup_font_renderer(std::wstring font)
 {
 	if (FAILED(FW1CreateFactory(FW1_VERSION, &p_font_factory)))
 		handle_error("renderer - failed to create font factory");
@@ -569,7 +569,7 @@ void renderer::setup_font_renderer()
 	if (FAILED(default_draw_list.init_text_geometry(p_font_factory)))
 		handle_error("renderer - failed to init text geometry");
 
-	if (FAILED(p_font_factory->CreateFontWrapper(p_device, L"Verdana", &p_font_wrapper)))
+	if (FAILED(p_font_factory->CreateFontWrapper(p_device, font.c_str(), &p_font_wrapper)))
 		handle_error("renderer - failed to create font wrapper");
 
 	p_font_wrapper->DrawString(p_device_context, L"", 0.0f, 0.0f, 0.0f, 0xff000000, FW1_RESTORESTATE | FW1_NOFLUSH);
@@ -580,10 +580,13 @@ void renderer::setup_font_renderer()
 //
 
 renderer::renderer() :
+	initialized(false),
 	default_draw_list(),
 	p_swapchain(nullptr),
+	p_device(nullptr),
 	p_device_context(nullptr),
 	p_backbuffer(nullptr),
+	p_blend_state(nullptr),
 	p_layout(nullptr),
 	p_vertex_shader(nullptr),
 	p_pixel_shader(nullptr),
