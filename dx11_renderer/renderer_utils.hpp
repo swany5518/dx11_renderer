@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../FW1FontWrapper/Source/FW1FontWrapper.h"
+
 #define PI 3.141592654f
 
 // struct for 2d position
@@ -9,15 +11,25 @@ struct vec2
 
 	vec2() :
 		x(0.f), y(0.f)
-	{}
+	{ }
 
 	vec2(float x, float y) :
 		x(x), y(y)
-	{}
+	{ }
+
+	vec2(int x, int y) :
+		x(static_cast<float>(x)),
+		y(static_cast<float>(y))
+	{ }
 
 	bool operator==(const vec2& other) const
 	{
 		return x == other.x && y == other.y;
+	}
+
+	vec2 operator-(const vec2& other) const
+	{
+		return { x - other.x, y - other.y };
 	}
 
 	// higher y corresponds to a smaller x value
@@ -71,12 +83,12 @@ struct color
 	}
 };
 
-// text flags for 
+// text formatting flags
 enum class text_flags
 {
-	LEFT_ALIGN   = FW1_LEFT,
-	CENTER_ALIGN = FW1_CENTER,
-	RIGHT_ALIGN  = FW1_RIGHT
+	left_align   = FW1_LEFT,
+	center_align = FW1_CENTER,
+	right_align  = FW1_RIGHT
 };
 
 // a struct that contains position and color information that the gpu will process

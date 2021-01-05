@@ -24,7 +24,10 @@ void renderer::initialize(HWND hwnd, std::wstring font)
 
 void renderer::draw()
 {
-	float background[] = { 1.f, 1.f, 1.f, 1.f };
+	if (!initialized)
+		handle_error("draw - renderer is not initialized, did you call initialize()?");
+
+	float background[] = { 0.f, 0.f, 0.f, 1.f };
 	p_device_context->ClearRenderTargetView(p_backbuffer, background);
 
 	// only draw draw list vertices if size > 0
@@ -386,7 +389,7 @@ void renderer::add_wire_frame(const vec2& top_left, const vec2& size, const colo
 {
 	vec2 points[] =
 	{
-		top_left,
+		{top_left.x - 1, top_left.y - 1},
 		{top_left.x + size.x, top_left.y},
 		{top_left.x + size.x, top_left.y + size.y},
 		{top_left.x, top_left.y + size.y},
@@ -420,7 +423,6 @@ void renderer::add_outlined_frame(const vec2& top_left, const vec2& size, float 
 {
 	
 }
-
 
 //
 // [public] constructors

@@ -11,7 +11,6 @@
 #include <D3DX10.h>
 #include <D3DX11.h>
 #include <DirectXMath.h>
-#include "../FW1FontWrapper/Source/FW1FontWrapper.h"
 #include "renderer_utils.hpp"
 #include "shaders.hpp"
 
@@ -115,7 +114,7 @@ public:
 	void add_outlined_frame(const vec2& top_left, const vec2& size, float thickness, float outline_thickness, const color& color_, const color& outline_color);
 
 	// add text
-	void add_text(const vec2& pos, const std::wstring& text, const color& color, float font_size, text_flags flags = text_flags::LEFT_ALIGN);
+	void add_text(const vec2& pos, const std::wstring& text, const color& color, float font_size, text_flags flags = text_flags::left_align);
 
 private:
 	bool initialized;
