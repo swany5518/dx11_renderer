@@ -15,6 +15,8 @@ void renderer::initialize(HWND hwnd, std::wstring font)
 	setup_input_layout();
 	setup_vertex_buffer();
 	setup_blend_state();
+	//setup_depth_stencil_state();
+	//setup_rasterizer_state();
 	setup_font_renderer(font);
 	setup_screen_projection();
 	setup_font_renderer(font);
@@ -381,16 +383,80 @@ void renderer::add_text(const vec2& top_left, const vec2& size, const std::wstri
 	p_font_wrapper->AnalyzeString(nullptr, text.c_str(), L"Consolas", font_size, &rect, color.to_hex_abgr(), final_flags, default_draw_list.p_text_geometry);
 }
 
+void renderer::add_text_with_bg(const vec2& top_left, const vec2& size, const std::wstring& text, const color& text_color, const color& bg_color, float font_size, text_align text_flags)
+{
+	if (text.empty())
+		return;
+
+	auto final_flags = static_cast<uint32_t>(text_flags) | FW1_NOFLUSH | FW1_NOWORDWRAP;
+
+	// rect for formatting text
+	FW1_RECTF rect{ top_left.x, top_left.y, top_left.x + size.x, top_left.y + size.y };
+
+	// rect for drawing background behind text
+	FW1_RECTF text_box_rect{ top_left.x, top_left.y, top_left.x, top_left.y };
+	FW1_RECTF text_box = p_font_wrapper->MeasureString(text.c_str(), L"Consolas", font_size, &text_box_rect, final_flags);
+
+	add_rect_filled({text_box.Left - 1.f, text_box.Top}, { text_box.Right - text_box.Left + 1.f, text_box.Bottom - text_box.Top }, bg_color);
+
+	p_font_wrapper->AnalyzeString(nullptr, text.c_str(), L"Consolas", font_size, &rect, text_color.to_hex_abgr(), final_flags, default_draw_list.p_text_geometry);
+}
+
+void renderer::add_outlined_text(const vec2& top_left, const vec2& size, const std::wstring& text, const color& text_color, const color& outline_color, float font_size, float outline_size, text_align flags)
+{
+	// add shadows
+	// -1,-1
+	add_text(top_left - outline_size, size, text, outline_color, font_size, flags);
+	// 0, -1
+	add_text({ top_left.x, top_left.y - outline_size }, size, text, outline_color, font_size, flags);
+	// 1, -1
+	add_text({ top_left.x + outline_size, top_left.y - outline_size }, size, text, outline_color, font_size, flags);
+	// 1, 0
+	add_text({ top_left.x + outline_size, top_left.y }, size, text, outline_color, font_size, flags);
+	// 1, 1
+	add_text(top_left + outline_size, size, text, outline_color, font_size, flags);
+	// 0, 1
+	add_text({ top_left.x, top_left.y + outline_size }, size, text, outline_color, font_size, flags);
+	// -1, 1
+	add_text({ top_left.x - outline_size, top_left.y + outline_size }, size, text, outline_color, font_size, flags);
+	// -1, 0
+	add_text({ top_left.x - outline_size, top_left.y }, size, text, outline_color, font_size, flags);
+
+	// add actual text
+	add_text(top_left, size, text, text_color, font_size, flags);
+}
+
+void renderer::add_outlined_text_with_bg(const vec2& top_left, const vec2& size, const std::wstring& text, const color& text_color, const color& outline_color, const color& bg_color, float font_size, float outline_size, text_align text_flags)
+{
+	if (text.empty())
+		return;
+
+	auto final_flags = static_cast<uint32_t>(text_flags) | FW1_NOFLUSH | FW1_NOWORDWRAP;
+
+	// rect for formatting text
+	FW1_RECTF rect{ top_left.x, top_left.y, top_left.x + size.x, top_left.y + size.y };
+
+	// rect for drawing background behind text
+	FW1_RECTF text_box_rect{ top_left.x, top_left.y, top_left.x, top_left.y };
+	FW1_RECTF text_box = p_font_wrapper->MeasureString(text.c_str(), L"Consolas", font_size, &text_box_rect, final_flags);
+
+	add_rect_filled({ text_box.Left - outline_size, text_box.Top }, { text_box.Right - text_box.Left + outline_size + 1.f, text_box.Bottom - text_box.Top }, bg_color);
+
+	add_outlined_text(top_left, size, text, text_color, outline_color, font_size, outline_size, text_flags);
+	//p_font_wrapper->AnalyzeString(nullptr, text.c_str(), L"Consolas", font_size, &rect, text_color.to_hex_abgr(), final_flags, default_draw_list.p_text_geometry);
+
+}
+
 void renderer::add_frame(const vec2& top_left, const vec2& size, float thickness, const color& frame_color)
 {
-	// top left -> top right
-	add_rect_filled(top_left, { size.x, thickness }, frame_color);
-	// top left -> bottom left
-	add_rect_filled(top_left, { thickness, size.y }, frame_color);
+	// top left -> top right - thick
+	add_rect_filled(top_left, { size.x - thickness, thickness }, frame_color);
+	// top left -> bottom left - thick
+	add_rect_filled({ top_left.x, top_left.y + thickness }, { thickness, size.y - thickness }, frame_color);
 	// top right -> bottom right
-	add_rect_filled({top_left.x + size.x - thickness, top_left.y}, {thickness, size.y}, frame_color);
+	add_rect_filled({top_left.x + size.x - thickness, top_left.y}, {thickness, size.y - thickness}, frame_color);
 	// bottom left -> bottom right
-	add_rect_filled({ top_left.x, top_left.y + size.y - thickness }, {size.x, thickness}, frame_color);
+	add_rect_filled({ top_left.x + thickness, top_left.y + size.y - thickness }, {size.x - thickness, thickness}, frame_color);
 }
 
 void renderer::add_wire_frame(const vec2& top_left, const vec2& size, const color& frame_color)
@@ -427,9 +493,13 @@ void renderer::add_3d_wire_frame(const vec2& top_left, const vec3& size, const c
 	add_polyline(points, sizeof(points) / sizeof(vec2), frame_color);
 }
 
-void renderer::add_outlined_frame(const vec2& top_left, const vec2& size, float thickness, float outline_thickness, const color& box_color, const color& outline_color)
+void renderer::add_outlined_frame(const vec2& top_left, const vec2& size, float thickness, float outline_thickness, const color& frame_color, const color& outline_color)
 {
-	
+	// frame shadow
+	add_frame(top_left - outline_thickness, size + (outline_thickness * 2), thickness + outline_thickness * 2, outline_color);
+
+	// actual frame
+	add_frame(top_left, size, thickness, frame_color);
 }
 
 //
@@ -569,16 +639,17 @@ void renderer::setup_vertex_buffer()
 void renderer::setup_blend_state()
 {
 	D3D11_BLEND_DESC blend_desc{};
-
+	ZeroMemory(&blend_desc, sizeof(blend_desc));
 	blend_desc.RenderTarget->BlendEnable = TRUE;
 	blend_desc.RenderTarget->SrcBlend = D3D11_BLEND_SRC_ALPHA;
 	blend_desc.RenderTarget->DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-	blend_desc.RenderTarget->SrcBlendAlpha = D3D11_BLEND_INV_DEST_ALPHA;//D3D11_BLEND_ONE;
-	blend_desc.RenderTarget->DestBlendAlpha = D3D11_BLEND_ONE;
 	blend_desc.RenderTarget->BlendOp = D3D11_BLEND_OP_ADD;
-	blend_desc.RenderTarget->BlendOpAlpha = D3D11_BLEND_OP_ADD;
-	blend_desc.RenderTarget->RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
+	blend_desc.RenderTarget->SrcBlendAlpha = D3D11_BLEND_ONE;
+	blend_desc.RenderTarget->DestBlendAlpha = D3D11_BLEND_ONE;
+	blend_desc.RenderTarget->BlendOpAlpha = D3D11_BLEND_OP_ADD;
+
+	blend_desc.RenderTarget->RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
 	p_device->CreateBlendState(&blend_desc, &p_blend_state);
 	p_device_context->OMSetBlendState(p_blend_state, nullptr, 0xFFFFFFFF);
@@ -587,11 +658,11 @@ void renderer::setup_blend_state()
 void renderer::setup_depth_stencil_state()
 {
 	D3D11_DEPTH_STENCIL_DESC depth_stencil_desc;
+	ZeroMemory(&depth_stencil_desc, sizeof(D3D11_DEPTH_STENCIL_DESC));
 
-	ZeroMemory(&depth_stencil_desc, sizeof(depth_stencil_desc));
 	depth_stencil_desc.DepthEnable = false;
 	depth_stencil_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	depth_stencil_desc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+	depth_stencil_desc.DepthFunc = D3D11_COMPARISON_LESS;
 	depth_stencil_desc.StencilEnable = false;
 	depth_stencil_desc.FrontFace.StencilFailOp = depth_stencil_desc.FrontFace.StencilDepthFailOp = depth_stencil_desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 	depth_stencil_desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;

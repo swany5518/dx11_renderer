@@ -110,11 +110,20 @@ public:
 	// add a 3d wire frame
 	void add_3d_wire_frame(const vec2& top_left, const vec3& size, const color& frame_color);
 
-	// add an outlined frame
+	// add a frame with a shadow behind it
 	void add_outlined_frame(const vec2& top_left, const vec2& size, float thickness, float outline_thickness, const color& color_, const color& outline_color);
 
 	// add text, top_left and size are for the text bounding box, see text_flags enum for flags
 	void add_text(const vec2& top_left, const vec2& size, const std::wstring& text, const color& color, float font_size, text_align flags = text_align::left_top);
+
+	// add text with background around the smallest rect containing the text
+	void add_text_with_bg(const vec2& top_left, const vec2& size, const std::wstring& text, const color& text_color, const color& bg_color, float font_size, text_align text_flags = text_align::left_top);
+
+	// add outlined text, this is not done in a good way so it could affect performance
+	void add_outlined_text(const vec2& top_left, const vec2& size, const std::wstring& text, const color& text_color, const color& outline_color, float font_size, float outline_size = 1.f, text_align text_flags = text_align::left_top);
+
+	// add outlined text with a background, this is not done in a good way so it could affect performance
+	void add_outlined_text_with_bg(const vec2& top_left, const vec2& size, const std::wstring& text, const color& text_color, const color& outline_color, const color& bg_color, float font_size, float shadow_size = 1.f, text_align text_flags = text_align::left_top);
 
 private:
 	bool initialized;
@@ -131,8 +140,8 @@ private:
 	ID3D11Buffer*			 p_vertex_buffer;  // vertex buffer ptr
 	ID3D11Buffer*			 p_screen_projection_buffer; // screen projection buffer ptr
 							 
-	IFW1Factory*			 p_font_factory; // font factory ptr
-	IFW1FontWrapper*		 p_font_wrapper;  // font wrapper ptr
+	IFW1Factory*			 p_font_factory;   // font factory ptr
+	IFW1FontWrapper*		 p_font_wrapper;   // font wrapper ptr
 
 	draw_list default_draw_list; // default draw list, we should only need 1 draw list. In the future we could add more
 	DirectX::XMMATRIX screen_projection;

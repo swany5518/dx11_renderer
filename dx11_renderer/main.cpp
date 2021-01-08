@@ -12,58 +12,14 @@
 // define the screen resolution
 #define SCREEN_WIDTH  1000
 #define SCREEN_HEIGHT 1000
-inline static float test = 5.f;
-inline static float test2 = 5.f;
-
-inline static slider<float> slide{ vec2{ 100.f, 100.f }, { 200, 20 }, L"slider",  &test, 0.f, 20.f };
-inline static slider<float> slide1{ vec2{ 100.f, 130.f }, { 300, 20 }, L"slider", &test2, 0.f, 20.f };
-
-
-inline std::vector<widget*> widgets = {
-    &slide,
-    &slide1
-};
 
 // this is the main message handler for the program
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    widget_msg_handler(message, wParam, lParam);
     vec2 pos;
     switch (message)
     {
-    case WM_LBUTTONDOWN:
-        std::cout << "LBUTTON DOWN" << std::endl;
-        pos = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
-        for (auto w : widgets)
-            if (w->contains(pos))
-            {
-                std::cout << "setting clicking to true from wndproc" << std::endl;
-                w->mouse_info.clicking = true;
-            }
-        break;
-
-    case WM_LBUTTONUP:
-        std::cout << "LBUTTON UP" << std::endl;
-        for (auto w : widgets)
-        {
-            if (w->mouse_info.clicking && w->contains(pos))
-                w->mouse_info.clicked = true;
-
-            w->mouse_info.clicking = false;
-        }
-        break;
-    case WM_MOUSEMOVE:
-        pos = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
-        std::cout << "MOUSEMOVE X: " << pos.x << " Y: " << pos.y << std::endl;
-    
-        for (auto w : widgets)
-        {
-            if (w->mouse_info.clicking)
-            {
-                std::cout << "calling on_drag from wndproc" << std::endl;
-                w->on_drag(pos);
-            }
-        }
-        break;
     case WM_DESTROY:
     {
         PostQuitMessage(0);
@@ -107,7 +63,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
     color red{ 1.f, 0.f, 0.f, 1.f };
     color green{ 0.f, 1.f, 0.f, 1.f };
-    color blue{ 0.f, 0.f, 1.f, 0.5f };
+    color blue{ 0.f, 0.f, 1.f, .5f };
     color black{ 0.f, 0.f, 0.f, 1.f };
     color white{ 1.f, 1.f, 1.f, 1.f };
     color yellow{ 1.f, 1.f, 0.f, 1.f };
@@ -162,8 +118,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         for (auto w : widgets)
             w->draw();
 
-        //renderer.add_circle({ 100.f, 100.f }, 10.f, blue, 20);
+        if (debug_move)
+            renderer.add_text_with_bg({ 550, 0 }, { 300, 100 }, L"drag to move widgets", red, black, 40.f);
+        
+     
         renderer.draw();
+
+        if (GetAsyncKeyState(VK_INSERT) & 0x1)
+            debug_move = !debug_move;
     }
 
     renderer.cleanup();
@@ -173,9 +135,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 int main()
 {
-    mouse_state ms{};
+   
 
-    std::cout << ms.state+0 << std::endl;
+    
 
 
     return 0;

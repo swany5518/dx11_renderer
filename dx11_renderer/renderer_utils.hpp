@@ -27,9 +27,24 @@ struct vec2
 		return x == other.x && y == other.y;
 	}
 
+	vec2 operator-(float amount) const
+	{
+		return { x - amount, y - amount };
+	}
+
 	vec2 operator-(const vec2& other) const
 	{
 		return { x - other.x, y - other.y };
+	}
+
+	vec2 operator+(float amount) const
+	{
+		return { x + amount, y + amount };
+	}
+
+	vec2 operator+(const vec2& other) const
+	{
+		return { x + other.x, y + other.y };
 	}
 
 	// higher y corresponds to a smaller x value
