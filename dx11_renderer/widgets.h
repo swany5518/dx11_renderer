@@ -9,6 +9,129 @@
 #include "renderer_utils.hpp"
 #include "renderer.h"
 
+//
+// widget style structs and enums
+//
+struct checkbox_style
+{
+	// text styling
+	float text_size;
+	float text_outline_thickness;
+	color text_color;
+	color text_outline_color;
+	color text_background_color;
+	vec2 label_relative_pos; // labels position relative to the top left of the widget
+
+	// border styling
+	float border_thickness;
+	float border_outline_thickness;
+	color border_color;
+	color border_outline_color;
+
+	// checkbox checked rect styling
+	color top_left_color;
+	color top_right_color;
+	color bottom_left_color;
+	color bottom_right_color;
+};
+
+struct button_style
+{
+	// text styling
+	float text_size;
+	float text_outline_thickness;
+	color text_color;
+	color text_outline_color;
+	color text_background_color;
+
+	// border styling
+	float border_thickness;
+	float border_outline_thickness;
+	color border_color;
+	color border_outline_color;
+
+	// button coloring
+	color top_left_color;
+	color top_right_color;
+	color bottom_left_color;
+	color bottom_right_color;
+};
+
+struct slider_style
+{
+	// text styling
+	float text_size;
+	float text_outline_thickness;
+	color text_color;
+	color text_outline_color;
+	color text_background_color;
+	vec2 label_relative_pos; // labels position relative to the top left of the widget
+
+	// border styling
+	float border_thickness;
+	float border_outline_thickness;
+	color border_color;
+	color border_outline_color;
+
+	// slide coloring
+	color bg_color;
+	color top_left_color;
+	color top_right_color;
+	color bottom_left_color;
+	color bottom_right_color;
+};
+
+struct text_entry_style
+{
+	// text styling
+	float text_size;
+	float text_outline_thickness;
+	color text_color;
+	color text_outline_color;
+	color text_background_color;
+	vec2 label_relative_pos; // labels position relative to the top left of the widget
+
+	// border styling
+	float border_thickness;
+	float border_outline_thickness;
+	color border_color;
+	color border_outline_color;
+
+	// entry box_color
+	color background_color;
+	color top_left_color;
+	color top_right_color;
+	color bottom_left_color;
+	color bottom_right_color;
+};
+
+struct combo_box_style
+{
+	// text styling
+	float text_size;
+	float text_offset;
+	float text_outline_thickness;
+	color text_color;
+	color text_outline_color;
+	color text_background_color;
+
+	// border styling
+	float border_thickness;
+	float border_outline_thickness;
+	color border_color;
+	color border_outline_color;
+
+	// interior coloring
+	color top_left_color;
+	color top_right_color;
+	color bottom_left_color;
+	color bottom_right_color;
+};
+
+//
+// widget utilities
+//
+
 // enum class containing all possible types of widgets
 enum class widget_type
 {
@@ -20,7 +143,7 @@ enum class widget_type
 	combo_box
 };
 
-// union for widgets to know if they are clicked, clicking or hovered
+// union for widgets to know if they are clicked, clicking, dragging or hovered
 struct mouse_state
 {
 	vec2 click_origin; // used for dragging widgets
@@ -44,6 +167,10 @@ struct mouse_state
 	{ }
 };
 
+//
+// widgets 
+//
+
 // base widget inheritable, includes size and position and click/clicking/hovered state
 struct widget
 {
@@ -51,6 +178,7 @@ struct widget
 	vec2 size;
 	std::wstring label;
 	mouse_state mouse_info;
+	bool active;
 
 	inline static renderer* p_renderer;
 
@@ -65,7 +193,8 @@ struct widget
 		top_left(top_left),
 		size(size),
 		label(label),
-		mouse_info({ 0.f, 0.f })
+		mouse_info({ 0.f, 0.f }),
+		active(true)
 	{ }
 
 	// determine if an widget contains a position
@@ -87,18 +216,20 @@ struct widget
 	virtual void draw() {  }
 
 	// should be called when the mouse is over the widget
-	virtual void on_lbutton_down() 
+	virtual void on_lbutton_down(const vec2& mouse_position) 
 	{ 
 		mouse_info.clicking = 1;
 		mouse_info.clicked = 0;
 		mouse_info.hovering = 0;
-		
+		mouse_info.click_origin = relative_position(mouse_position);
 	}
-	virtual void on_lbutton_up() 
+	virtual void on_lbutton_up(const vec2& mouse_position) 
 	{ 
-		mouse_info.clicking = 0;
-		mouse_info.clicked = 1;
-		mouse_info.hovering = 1;
+		if (mouse_info.clicking)
+		{
+			mouse_info.clicking = 0;
+			mouse_info.clicked = 1;
+		}
 	}
 	virtual void on_drag(const vec2& new_position) {}
 	virtual void on_widget_move(const vec2& new_position)
@@ -117,6 +248,7 @@ struct widget
 struct checkbox : widget
 {
 	bool* value;
+	checkbox_style* style;
 
 	checkbox() = delete;
 
@@ -148,16 +280,26 @@ struct checkbox : widget
 // simple button widget for event triggering
 struct button : widget
 {
+	button_style* style;
+
 	button() = delete;
 
-	button(const vec2& top_left, const vec2& size, const std::wstring& label) :
-		widget(top_left, size, label)
+	button(const vec2& top_left, const vec2& size, const std::wstring& label, button_style* style) :
+		widget(top_left, size, label),
+		style(style)
 	{ }
 	
 	void draw()
 	{
-		p_renderer->add_rect_filled_multicolor(top_left, size, { 1.f, 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f, 1.f }, { 1.f, 1.f, 1.f, 1.f });
-		p_renderer->add_text(top_left, size, label, { 1.f, 0.f, 0.f, 1.f }, 14.f, text_align::center_middle);
+		// add button rect
+		p_renderer->add_rect_filled_multicolor(top_left, size, style->top_left_color, style->top_right_color, style->bottom_left_color, style->bottom_right_color);
+
+		// add button border
+		p_renderer->add_outlined_frame(top_left, size, style->border_thickness, style->border_outline_thickness, style->border_color, style->border_outline_color);
+
+		// add button text
+		p_renderer->add_outlined_text_with_bg(top_left, size, label, style->text_color, style->text_outline_color, style->text_background_color, style->text_size, style->text_outline_thickness, text_align::center_middle);
+		
 	}
 
 	widget_type get_type()
@@ -173,19 +315,34 @@ struct slider : widget
 	Ty* value;
 	Ty min_value;
 	Ty max_value;
+	slider_style* style;
 
-	slider(const vec2& top_left, const vec2& size, const std::wstring& label, Ty* value, Ty min, Ty max) :
+	slider(const vec2& top_left, const vec2& size, const std::wstring& label, Ty* value, Ty min, Ty max, slider_style* style) :
 		widget(top_left, size, label),
 		value(value),
 		min_value(min),
-		max_value(max)
-	{ 
-		
-	}
+		max_value(max),
+		style(style)
+	{ }
 
 	Ty get_range()
 	{
 		return max_value - min_value;
+	}
+
+	void on_lbutton_down(const vec2& mouse_position)
+	{
+		mouse_info.clicking = 1;
+		mouse_info.clicked = 0;
+		mouse_info.hovering = 0;
+		mouse_info.click_origin = relative_position(mouse_position);
+
+		float ratio = std::clamp<float>(mouse_position.x - top_left.x, 0.f, size.x) / size.x;
+
+		if (std::is_integral_v<Ty>)
+			*value = static_cast<Ty>(std::round(static_cast<float>(get_range()) * ratio + static_cast<float>(min_value)));
+		else if (std::is_floating_point_v<Ty>)
+			*value = static_cast<Ty>(get_range() * ratio + min_value);
 	}
 
 	void on_drag(const vec2& new_position)
@@ -201,9 +358,20 @@ struct slider : widget
 
 	void draw()
 	{
+		// calculate the slider width
 		float scaled_width = static_cast<float>(*value) / static_cast<float>(get_range()) * size.x;
-		p_renderer->add_rect_filled_multicolor(top_left, { scaled_width, size.y }, { 1.f, 0.f, 0.f, 1.f }, { 1.f, 0.f, 0.f, 1.f }, { 1.f, 0.f, 0.f, 1.f }, { 1.f, 0.f, 0.f, 1.f });
-		p_renderer->add_frame(top_left, size, 2.f, { 1.f, 1.f, 1.f, 1.f });
+
+		// add the background color
+		p_renderer->add_rect_filled(top_left, size, style->bg_color);
+
+		// add the slider
+		p_renderer->add_rect_filled_multicolor(top_left, { scaled_width, size.y }, style->top_left_color, style->top_right_color, style->bottom_left_color, style->bottom_right_color);
+
+		// add the border
+		p_renderer->add_outlined_frame(top_left, size, style->border_thickness, style->border_outline_thickness, style->border_color, style->border_outline_color);
+
+		// add the label
+		p_renderer->add_outlined_text_with_bg(top_left + style->label_relative_pos, size, label, style->text_color, style->text_outline_color, style->text_background_color, style->text_size, style->text_outline_thickness);
 		
 	}
 
@@ -218,10 +386,12 @@ struct text_entry : widget
 {
 	std::string buffer;
 	uint32_t max_buffer_size;
+	text_entry_style* style;
 
-	text_entry(const vec2& top_left, const vec2& size, const std::wstring& label, uint32_t max_buffer_size = 128u) :
+	text_entry(const vec2& top_left, const vec2& size, const std::wstring& label, text_entry_style* style, uint32_t max_buffer_size = 128u) :
 		widget(top_left, size, label),
 		buffer(),
+		style(style),
 		max_buffer_size(max_buffer_size)
 
 	{ 
@@ -242,25 +412,17 @@ struct text_entry : widget
 // widget commonly used to place multiple grouped widgets inside
 struct combo_box : widget
 {
-	combo_box(const vec2& top_left, const vec2& size, const std::wstring& label) :
-		widget(top_left, size, label)
+	combo_box_style* style;
+
+	combo_box(const vec2& top_left, const vec2& size, const std::wstring& label, combo_box_style* style) :
+		widget(top_left, size, label),
+		style(style)
 	{ }
 
 	void draw()
 	{
-		float text_offset = 20.f;
-		float text_size = 14.f;
-		float thickness = 2.f;
-		float shadow_thickness = 1.5f;
-		color frame_color{ .75f, .75f, .75f, 1.f };
-		color outline_color{ .2f, .2f, .2f, .8f };
-		color text_color{ 1.f, 1.f, 1.f, 1.f };
-		color text_outline{ 0.f, 0.f, 0.f, 1.f };
-		color wnd_bg{ 0.f, 0.f, 0.5f, 1.f };
-
-		p_renderer->add_outlined_frame(top_left, size, thickness, shadow_thickness, frame_color, outline_color );
-		//p_renderer->add_text_with_background({ top_left.x + text_offset, top_left.y - text_size / 2.f - shadow_thickness }, size, label, text_color, wnd_bg, text_size, text_align::left_top);
-		p_renderer->add_outlined_text_with_bg({ top_left.x + text_offset, top_left.y - text_size / 2.f - shadow_thickness }, size, label, text_color, text_outline, wnd_bg, text_size);
+		p_renderer->add_outlined_frame(top_left, size, style->border_thickness, style->border_outline_thickness, style->border_color, style->border_outline_color );
+		p_renderer->add_outlined_text_with_bg({ top_left.x + style->text_offset, top_left.y - style->text_size / 2.f - style->text_outline_thickness }, size, label, style->text_color, style->text_outline_color, style->text_background_color, style->text_size);
 	}
 
 	void on_drag(const vec2& new_position)
@@ -274,21 +436,27 @@ struct combo_box : widget
 	}
 };
 
+  /////////////////////////////////////////////
+ // debugging stuff, delete/make nice later //
+/////////////////////////////////////////////
+inline static combo_box_style combo_box_style_default{ 14.f, 20.f, 1.f, {1.f, 1.f, 1.f, 1.f}, {0.f, 0.f, 0.f, 1.f}, {0.f, 0.f, 0.f, 0.f}, 2.f, 1.5f, {1.f, 1.f, 1.f, 1.f}, {.75f, .75f, .75f, .75f}, {0.f, 0.f, 0.f, 0.f}, {0.f, 0.f, 0.f, 0.f}, {0.f, 0.f, 0.f, 0.f}, {0.f, 0.f, 0.f, 0.f} };
+inline static button_style button_style_default{14.f, 1.f, {1.f, 1.f, 1.f, 1.f}, {0.f, 0.f, 0.f, 1.f}, {0.f, 0.f, 0.f, 0.f}, 2.f, 1.5f, {1.f, 1.f, 1.f, 1.f}, {.75f, .75f, .75f, .75f}, {0.f, 0.f, 0.f, 0.f}, {0.f, 0.f, 0.f, 0.f}, {0.f, 0.f, 0.f, 0.f}, {0.f, 0.f, 0.f, 0.f} };
+inline static slider_style slider_style_default{ 14.f, 1.f, {1.f, 1.f, 1.f, 1.f}, {0.f, 0.f, 0.f, 1.f}, {0.f, 0.f, 0.f, 0.f}, {0, 0}, 2.f, 1.5f, {1.f, 1.f, 1.f, 1.f}, {.75f, .75f, .75f, .75f}, {0.f, 0.f, 0.f, 0.f}, {0.f, 0.f, 0.f, 1.f}, {0.f, 0.f, 0.f, 1.f}, {0.f, 0.f, 0.f, 1.f}, {0.f, 0.f, 0.f, 1.f} };
 
-
-// debugging stuff, delete later
 inline static float test = 5.f;
 inline static float test2 = 5.f;
 
-inline static slider<float> slide{ vec2{ 100.f, 100.f }, { 200, 20 }, L"slider",  &test, 0.f, 20.f };
-inline static slider<float> slide1{ vec2{ 100.f, 130.f }, { 300, 20 }, L"slider", &test2, 0.f, 20.f };
-inline static combo_box cb{ {200, 200}, {300, 400}, L"combo box" };
+inline static slider<float> slide{ vec2{ 100.f, 100.f }, { 200, 20 }, L"slider",  &test, 0.f, 20.f, &slider_style_default };
+inline static slider<float> slide1{ vec2{ 100.f, 130.f }, { 300, 20 }, L"slider", &test2, 0.f, 20.f, &slider_style_default };
+inline static button btn{ {400, 400}, {100, 20}, L"button", &button_style_default};
+inline static combo_box cb{ {200, 200}, {300, 400}, L"combo box", &combo_box_style_default };
 
 inline static std::vector<widget*> widgets =
 {
 	&slide,
 	&slide1,
-	&cb
+	&cb,
+	&btn
 };
 
 inline bool debug_move = false;
@@ -306,21 +474,20 @@ inline static void widget_msg_handler(UINT message, WPARAM w_param, LPARAM l_par
 		{
 			if (w->contains(pos))
 			{
-				//std::cout << "setting clicking to true from wndproc" << std::endl;
-				w->mouse_info.click_origin = w->relative_position(pos);
-				w->mouse_info.clicking = true;
+				if (!debug_move)
+				w->on_lbutton_down(pos);
 				break;
 			}
 		}
-
+			
 		break;
 
 	case WM_LBUTTONUP:
 		//std::cout << "LBUTTON UP" << std::endl;
 		for (auto w : widgets)
 		{
-			if (w->mouse_info.clicking && w->contains(pos))
-				w->mouse_info.clicked = true;
+			if (w->contains(pos))
+				w->on_lbutton_up(pos);
 
 			w->mouse_info.click_origin = { 0, 0 };
 			w->mouse_info.clicking = false;
