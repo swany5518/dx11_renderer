@@ -337,12 +337,15 @@ struct slider : widget
 		mouse_info.hovering = 0;
 		mouse_info.click_origin = relative_position(mouse_position);
 
-		float ratio = std::clamp<float>(mouse_position.x - top_left.x, 0.f, size.x) / size.x;
+		if (active)
+		{
+			float ratio = std::clamp<float>(mouse_position.x - top_left.x, 0.f, size.x) / size.x;
 
-		if (std::is_integral_v<Ty>)
-			*value = static_cast<Ty>(std::round(static_cast<float>(get_range()) * ratio + static_cast<float>(min_value)));
-		else if (std::is_floating_point_v<Ty>)
-			*value = static_cast<Ty>(get_range() * ratio + min_value);
+			if (std::is_integral_v<Ty>)
+				*value = static_cast<Ty>(std::round(static_cast<float>(get_range()) * ratio + static_cast<float>(min_value)));
+			else if (std::is_floating_point_v<Ty>)
+				*value = static_cast<Ty>(get_range() * ratio + min_value);
+		}
 	}
 
 	void on_drag(const vec2& new_position)
@@ -474,7 +477,7 @@ inline static void widget_msg_handler(UINT message, WPARAM w_param, LPARAM l_par
 		{
 			if (w->contains(pos))
 			{
-				if (!debug_move)
+				w->active = !debug_move;
 				w->on_lbutton_down(pos);
 				break;
 			}
