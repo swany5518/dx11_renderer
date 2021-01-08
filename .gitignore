@@ -53,3 +53,5 @@ dx11_renderer/example_renderer.cpp
 .vs/dx11_renderer/v16/.suo
 .vs/dx11_renderer/v16/.suo
 *.exp
+dx11_renderer/x64/Debug/dx11_renderer.vcxproj.FileListAbsolute.txt
+.vs/dx11_renderer/v16/.suo

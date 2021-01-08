@@ -17,7 +17,7 @@ void renderer::initialize(HWND hwnd, std::wstring font)
 	setup_blend_state();
 	setup_font_renderer(font);
 	setup_screen_projection();
-	//setup_font_renderer(font);
+	setup_font_renderer(font);
 
 	initialized = true;
 }
@@ -27,12 +27,23 @@ void renderer::draw()
 	if (!initialized)
 		handle_error("draw - renderer is not initialized, did you call initialize()?");
 
-	float background[] = { 0.f, 0.f, 0.f, 1.f };
+	float background[] = { 0.f, 0.f, 0.5f, 1.f };
 	p_device_context->ClearRenderTargetView(p_backbuffer, background);
 
 	// only draw draw list vertices if size > 0
 	if (default_draw_list.vertices.size())
 	{
+		int count = 0;
+		float z_order = 0.f;
+		for (auto& batch : default_draw_list.batch_list)
+		{
+			for (auto i = 0u; i < batch.vertex_count; ++i)
+				default_draw_list.vertices[count + i].z = z_order;
+
+			count += batch.vertex_count;
+			z_order += 0.01f;
+		}
+
 		// map our vertex buffer 
 		D3D11_MAPPED_SUBRESOURCE mapped_resource;
 		if (FAILED(p_device_context->Map(p_vertex_buffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &mapped_resource)))
@@ -90,7 +101,7 @@ void renderer::add_polyline(const vec2* points, size_t size, const color& color)
 	add_vertices(vertices.data(), vertices.size(), D3D_PRIMITIVE_TOPOLOGY_LINESTRIP);
 }
 
-void renderer::add_line_multicolor(const vec2& start, const color& start_color, const vec2& end, const color& end_color)
+void renderer::add_line_multicolor(const vec2& start, const vec2& end, const color& start_color, const color& end_color)
 {
 	vertex vertices[] =
 	{
@@ -276,34 +287,33 @@ void renderer::add_circle(const vec2& middle, float radius, const color& color, 
 	if (segments < 4 || segments > MAX_DRAW_LIST_VERTICES - 1)
 		handle_error("add_circle - need at least 4 and less than MAX_DRAW_LIST_VERTICES");
 
-	// for each circle resolution(segments), we only need to calculate the vertex locations once to avoid calling calc_theta(), sin(), and cos() every call
-	static std::unordered_map<size_t, std::vector<vertex>> vertex_cache{};
+	// store unit circle locations for circle resolutions(segments) to avoid calculating each add
+	static std::unordered_map<size_t, std::vector<vec2>> positions_cache{};
 
-	// prefill our vertex buffer with segments + 1 vertices
-	std::vector<vertex> vertices{};
+	std::vector<vec2> positions{};
 
-	auto cached_vertices = vertex_cache.find(segments);
+	auto cached_positions = positions_cache.find(segments);
 
-	if (cached_vertices == vertex_cache.end())
+	if (cached_positions == positions_cache.end())
 	{
 		for (auto i = 0u; i <= segments; ++i)
 		{
 			float theta = calc_theta(i, segments);
-			vertices.emplace_back(vec2{ cos(theta), sin(theta) }, color);
+			positions.emplace_back( cos(theta), sin(theta));
 		}
 
-		vertex_cache[segments] = vertices;
+		positions_cache[segments] = positions;
 	}
 
 	else
-		vertices = cached_vertices->second;
+		positions = cached_positions->second;
 	
-	for (auto& vertex : vertices)
-	{
-		vertex *= radius;
-		vertex += middle;
-	}
+	// might be a good idea to cache these later on
+	std::vector<vertex> vertices{};
 
+	for (auto& position : positions)
+		vertices.emplace_back(vec2{ position.x * radius + middle.x, position.y * radius + middle.y }, color);
+	
 	add_vertices(vertices.data(), vertices.size(), D3D_PRIMITIVE_TOPOLOGY_LINESTRIP);
 }
 
@@ -314,25 +324,25 @@ void renderer::add_circle_filled(const vec2& middle, float radius, const color& 
 		handle_error("add_circle_filled - need at least 4 and less than MAX_DRAW_LIST_VERTICES");
 
 	// for each circle resolution(segments), we only need to calculate the vertex locations once to avoid calling calc_theta(), sin(), and cos() every call
-	static std::unordered_map<size_t, std::vector<vertex>> vertex_cache{};
+	static std::unordered_map<size_t, std::vector<vec2>> positions_cache{};
 
 	// declare our vertex list, these will be unit circle coords, multiply by radius and account for middle position to get correct size
-	std::vector<vertex> vertices{};
+	std::vector<vec2> positions{};
 
 	// check for cached vertices
-	auto cached_vertices = vertex_cache.find(segments);
+	auto cached_positions = positions_cache.find(segments);
 
 	// if we do not have this circle resolution cached, we need to add it
-	if (cached_vertices == vertex_cache.end())
+	if (cached_positions == positions_cache.end())
 	{
 		// vertices 1, 2 and 3 need to be added first
 		auto theta_1 = calc_theta(0, segments);
 		auto theta_2 = calc_theta(1, segments);
 		auto theta_3 = calc_theta(segments - 1, segments);
 		
-		vertices.emplace_back(vec2{cos(theta_1), sin(theta_1)}, color);
-		vertices.emplace_back(vec2{cos(theta_2), sin(theta_2)}, color);
-		vertices.emplace_back(vec2{cos(theta_3), sin(theta_3)}, color);
+		positions.emplace_back(cos(theta_1), sin(theta_1));
+		positions.emplace_back(cos(theta_2), sin(theta_2));
+		positions.emplace_back(cos(theta_3), sin(theta_3));
 
 		// for the 4th, 5th, ... nth vertex, its position is dependant on its nth number becuase of trianglestrips
 		for (auto list_place = 4u; list_place <= segments; ++list_place)
@@ -340,21 +350,19 @@ void renderer::add_circle_filled(const vec2& middle, float radius, const color& 
 			// calculate where on the circle the vertex needs to calculated from vertex order for 8 segments the clockwise order is goes 1,2,4,6,8,7,5,3
 			auto vertex_n = list_place % 2 != 0 ? segments - list_place / 2 : list_place / 2;
 			auto theta_n = calc_theta(vertex_n, segments);
-			vertices.emplace_back(vec2{cos(theta_n), sin(theta_n)}, color);
+			positions.emplace_back(cos(theta_n), sin(theta_n));
 		}
 
-		vertex_cache[segments] = vertices;
+		positions_cache[segments] = positions;
 	}
 	else
-		vertices = cached_vertices->second;
+		positions = cached_positions->second;
 
-	// account for middle position and multiply our unit circle scaled vertices by the radius to get correct size 
-	for (auto& vertex : vertices)
-	{
-		vertex *= radius;
-		vertex += middle;
-	}
-	
+	std::vector<vertex> vertices{};
+
+	for (auto& position : positions)
+		vertices.emplace_back(vec2{ position.x * radius + middle.x, position.y * radius + middle.y }, color);
+
 	add_vertices(vertices.data(), vertices.size(), D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 }
 
@@ -362,27 +370,27 @@ void renderer::add_circle_filled(const vec2& middle, float radius, const color& 
 // [public] intermediate shapes and model functions
 //
 
-void renderer::add_text(const vec2& pos, const std::wstring& text, const color& color, float font_size, text_flags text_flags)
+void renderer::add_text(const vec2& top_left, const vec2& size, const std::wstring& text, const color& color, float font_size, text_align text_flags)
 {
 	if (text.empty())
 		return;
 
 	auto final_flags = static_cast<uint32_t>(text_flags) | FW1_NOFLUSH | FW1_NOWORDWRAP;
 
-	FW1_RECTF rect{ pos.x, pos.y, pos.x, pos.y };
-	p_font_wrapper->AnalyzeString(nullptr, text.c_str(), L"Verdana", font_size, &rect, color.to_hex_abgr(), final_flags, default_draw_list.p_text_geometry);
+	FW1_RECTF rect{ top_left.x, top_left.y, top_left.x + size.x, top_left.y + size.y };
+	p_font_wrapper->AnalyzeString(nullptr, text.c_str(), L"Consolas", font_size, &rect, color.to_hex_abgr(), final_flags, default_draw_list.p_text_geometry);
 }
 
 void renderer::add_frame(const vec2& top_left, const vec2& size, float thickness, const color& frame_color)
 {
 	// top left -> top right
-	add_rect_filled(top_left, { size.x, -thickness }, frame_color);
+	add_rect_filled(top_left, { size.x, thickness }, frame_color);
 	// top left -> bottom left
-	add_rect_filled(top_left, { thickness, top_left.y - size.y }, frame_color);
+	add_rect_filled(top_left, { thickness, size.y }, frame_color);
 	// top right -> bottom right
-	add_rect_filled({top_left.x + size.x - thickness, top_left.y}, {thickness, -size.y}, frame_color);
+	add_rect_filled({top_left.x + size.x - thickness, top_left.y}, {thickness, size.y}, frame_color);
 	// bottom left -> bottom right
-	add_rect_filled({ top_left.x, top_left.y - size.y + thickness }, {size.x, -thickness}, frame_color);
+	add_rect_filled({ top_left.x, top_left.y + size.y - thickness }, {size.x, thickness}, frame_color);
 }
 
 void renderer::add_wire_frame(const vec2& top_left, const vec2& size, const color& frame_color)
@@ -408,12 +416,12 @@ void renderer::add_3d_wire_frame(const vec2& top_left, const vec3& size, const c
 		{top_left.x + size.x, top_left.y},						// top right
 		{top_left.x + size.x, top_left.y + size.y},				// bottom right
 		{top_left.x, top_left.y + size.y},						// bottom left
-		{top_left.x - size.z, top_left.y + size.y + size.z},	// bottom right - z
-		{top_left.x - size.z, top_left.y + size.z},				// top_left - z
-		{top_left.x + size.x - size.z, top_left.y + size.z },	// top right - z
+		{top_left.x - size.z, top_left.y + size.y - size.z},	// bottom right - z
+		{top_left.x - size.z, top_left.y - size.z},				// top_left - z
+		{top_left.x + size.x - size.z, top_left.y - size.z },	// top right - z
 		{top_left.x + size.x, top_left.y},						// top right
 		top_left,												// top left
-		{top_left.x - size.z, top_left.y + size.z},				// top_left - z
+		{top_left.x - size.z, top_left.y - size.z},				// top_left - z
 	};
 
 	add_polyline(points, sizeof(points) / sizeof(vec2), frame_color);
@@ -430,21 +438,22 @@ void renderer::add_outlined_frame(const vec2& top_left, const vec2& size, float 
 
 renderer::renderer() :
 	initialized(false),
-	default_draw_list(),
 	p_swapchain(nullptr),
 	p_device(nullptr),
 	p_device_context(nullptr),
 	p_backbuffer(nullptr),
-	p_blend_state(nullptr),
 	p_layout(nullptr),
+	p_blend_state(nullptr),
+	p_depth_stencil(nullptr),
 	p_vertex_shader(nullptr),
 	p_pixel_shader(nullptr),
 	p_vertex_buffer(nullptr),
 	p_screen_projection_buffer(nullptr),
-	screen_projection(),
 	p_font_factory(nullptr),
-	p_font_wrapper(nullptr)
-{}
+	p_font_wrapper(nullptr),
+	default_draw_list(),
+	screen_projection()
+{ }
 
 // 
 // [private] directx initialization functions
@@ -468,6 +477,7 @@ void renderer::setup_device_and_swapchain(HWND hwnd)
 	swapchain_desc.SampleDesc.Count = 4;                              // how many multisamples
 	swapchain_desc.Windowed = TRUE;                                   // windowed/full-screen mode
 	swapchain_desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;    // allow full-screen switching
+	swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
 	if (FAILED(D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, NULL, NULL, NULL, D3D11_SDK_VERSION, &swapchain_desc, &p_swapchain, &p_device, NULL, &p_device_context)))
 		handle_error("setup_device_and_swapchain - failed to create device and swapchain");
@@ -563,8 +573,8 @@ void renderer::setup_blend_state()
 	blend_desc.RenderTarget->BlendEnable = TRUE;
 	blend_desc.RenderTarget->SrcBlend = D3D11_BLEND_SRC_ALPHA;
 	blend_desc.RenderTarget->DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-	blend_desc.RenderTarget->SrcBlendAlpha = D3D11_BLEND_ONE;
-	blend_desc.RenderTarget->DestBlendAlpha = D3D11_BLEND_ZERO;
+	blend_desc.RenderTarget->SrcBlendAlpha = D3D11_BLEND_INV_DEST_ALPHA;//D3D11_BLEND_ONE;
+	blend_desc.RenderTarget->DestBlendAlpha = D3D11_BLEND_ONE;
 	blend_desc.RenderTarget->BlendOp = D3D11_BLEND_OP_ADD;
 	blend_desc.RenderTarget->BlendOpAlpha = D3D11_BLEND_OP_ADD;
 	blend_desc.RenderTarget->RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
@@ -572,6 +582,42 @@ void renderer::setup_blend_state()
 
 	p_device->CreateBlendState(&blend_desc, &p_blend_state);
 	p_device_context->OMSetBlendState(p_blend_state, nullptr, 0xFFFFFFFF);
+}
+
+void renderer::setup_depth_stencil_state()
+{
+	D3D11_DEPTH_STENCIL_DESC depth_stencil_desc;
+
+	ZeroMemory(&depth_stencil_desc, sizeof(depth_stencil_desc));
+	depth_stencil_desc.DepthEnable = false;
+	depth_stencil_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	depth_stencil_desc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+	depth_stencil_desc.StencilEnable = false;
+	depth_stencil_desc.FrontFace.StencilFailOp = depth_stencil_desc.FrontFace.StencilDepthFailOp = depth_stencil_desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depth_stencil_desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	depth_stencil_desc.BackFace = depth_stencil_desc.FrontFace;
+
+	p_device->CreateDepthStencilState(&depth_stencil_desc, &p_depth_stencil);
+	p_device_context->OMSetDepthStencilState(p_depth_stencil, 0);
+
+}
+
+void renderer::setup_rasterizer_state()
+{
+	ID3D11RasterizerState* p_rasterizer_state;
+	D3D11_RASTERIZER_DESC rasterizer_desc;
+	ZeroMemory(&rasterizer_desc, sizeof(rasterizer_desc));
+	rasterizer_desc.FillMode = D3D11_FILL_SOLID;
+	rasterizer_desc.CullMode = D3D11_CULL_BACK;
+	rasterizer_desc.ScissorEnable = false;
+	rasterizer_desc.DepthClipEnable = true;
+
+	if (FAILED(p_device->CreateRasterizerState(&rasterizer_desc, &p_rasterizer_state)))
+		handle_error("setup_rasterizer_state - failed to create rasterizer state");
+
+	p_device_context->RSSetState(p_rasterizer_state);
+
+	p_rasterizer_state->Release();
 }
 
 void renderer::setup_screen_projection()
@@ -629,8 +675,10 @@ void renderer::setup_font_renderer(std::wstring font)
 void renderer::add_vertex(const vertex& vertex, const D3D_PRIMITIVE_TOPOLOGY type)
 {
 	if (default_draw_list.vertices.size() >= MAX_DRAW_LIST_VERTICES)
+	{
+		handle_error("vertex buffer limit reached, did you forget to call renderer::draw()?");
 		draw();
-
+	}
 	if (default_draw_list.batch_list.empty() || default_draw_list.batch_list.back().type != type)
 		default_draw_list.batch_list.emplace_back(type, 1);
 	else
@@ -639,13 +687,16 @@ void renderer::add_vertex(const vertex& vertex, const D3D_PRIMITIVE_TOPOLOGY typ
 	default_draw_list.vertices.push_back(vertex);
 }
 
-void renderer::add_vertices(const vertex* p_vertices, const size_t vertex_count, const D3D_PRIMITIVE_TOPOLOGY type)
+void renderer::add_vertices(vertex* p_vertices, const size_t vertex_count, const D3D_PRIMITIVE_TOPOLOGY type)
 {
 	if (vertex_count > MAX_DRAW_LIST_VERTICES)
 		handle_error("add_vertices - trying to add too many vertices");
 
 	if (default_draw_list.vertices.size() + vertex_count >= MAX_DRAW_LIST_VERTICES)
+	{
+		handle_error("vertex buffer limit reached, did you forget to call renderer::draw()?");
 		draw();
+	}
 
 	if (default_draw_list.batch_list.empty() || default_draw_list.batch_list.back().type != type)
 		default_draw_list.batch_list.emplace_back(type, vertex_count);

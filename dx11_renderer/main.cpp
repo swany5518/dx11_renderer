@@ -12,40 +12,57 @@
 // define the screen resolution
 #define SCREEN_WIDTH  1000
 #define SCREEN_HEIGHT 1000
+inline static float test = 5.f;
+inline static float test2 = 5.f;
 
-inline std::vector<widget*> widgets;
+inline static slider<float> slide{ vec2{ 100.f, 100.f }, { 200, 20 }, L"slider",  &test, 0.f, 20.f };
+inline static slider<float> slide1{ vec2{ 100.f, 130.f }, { 300, 20 }, L"slider", &test2, 0.f, 20.f };
+
+
+inline std::vector<widget*> widgets = {
+    &slide,
+    &slide1
+};
 
 // this is the main message handler for the program
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     vec2 pos;
-    vec2 pos2;
     switch (message)
     {
     case WM_LBUTTONDOWN:
+        std::cout << "LBUTTON DOWN" << std::endl;
         pos = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
-        std::cout << "LEFT MOUSE CLICKED [ X: " << pos.x << " Y: " << pos.y << " ]" << std::endl;
-
-        for (auto& w : widgets)
-            if (w->contains(pos) && w->get_type() == widget_type::checkbox)
+        for (auto w : widgets)
+            if (w->contains(pos))
             {
-                std::cout << "calling virtual lbutton down" << std::endl;
-                w->on_lbutton_down();
+                std::cout << "setting clicking to true from wndproc" << std::endl;
+                w->mouse_info.clicking = true;
             }
-                
         break;
 
     case WM_LBUTTONUP:
-        pos2 = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
-        std::cout << "LEFT MOUSE RELEASED [ X: " << pos2.x << " Y: " << pos2.y << " ]" << std::endl;
+        std::cout << "LBUTTON UP" << std::endl;
+        for (auto w : widgets)
+        {
+            if (w->mouse_info.clicking && w->contains(pos))
+                w->mouse_info.clicked = true;
 
-        for (auto& w : widgets)
-            if (w->contains(pos2) && w->has_focus && w->get_type() == widget_type::checkbox)
+            w->mouse_info.clicking = false;
+        }
+        break;
+    case WM_MOUSEMOVE:
+        pos = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+        std::cout << "MOUSEMOVE X: " << pos.x << " Y: " << pos.y << std::endl;
+    
+        for (auto w : widgets)
+        {
+            if (w->mouse_info.clicking)
             {
-                std::cout << "calling virtual lbutton up" << std::endl;
-                w->on_lbutton_up();
+                std::cout << "calling on_drag from wndproc" << std::endl;
+                w->on_drag(pos);
             }
-
+        }
         break;
     case WM_DESTROY:
     {
@@ -60,7 +77,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     AllocConsole();
-    freopen("conin$", "r", stdin);
+    freopen("conin$" , "r", stdin);
     freopen("conout$", "w", stdout);
     freopen("conout$", "w", stderr);
 
@@ -81,22 +98,28 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     RECT wr = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
     AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
 
-    hWnd = CreateWindowEx(NULL, L"WindowClass", L"prism's first dx11 program", WS_OVERLAPPEDWINDOW, 300, 300, wr.right - wr.left, wr.bottom - wr.top, NULL, NULL, hInstance, NULL);
+    hWnd = CreateWindowEx(NULL, L"WindowClass", L"renderer example", WS_OVERLAPPEDWINDOW, 300, 300, wr.right - wr.left, wr.bottom - wr.top, NULL, NULL, hInstance, NULL);
     ShowWindow(hWnd, nCmdShow);
 
     renderer renderer{};
     renderer.initialize(hWnd);
     widget::set_renderer(&renderer);
-    bool val = 1;
-    checkbox box{ {100, 100}, {99, 99}, "lol",  &val };
-    widgets.push_back(&box);
 
-    color red{ 1.f, 0.f, 0.f, .5f };
+    color red{ 1.f, 0.f, 0.f, 1.f };
     color green{ 0.f, 1.f, 0.f, 1.f };
     color blue{ 0.f, 0.f, 1.f, 0.5f };
     color black{ 0.f, 0.f, 0.f, 1.f };
     color white{ 1.f, 1.f, 1.f, 1.f };
     color yellow{ 1.f, 1.f, 0.f, 1.f };
+
+    vec2 points[] =
+    {
+        {100, 650},
+        {150, 750},
+        {200, 680},
+        {300, 765},
+        {400, 720}
+    };
 
     MSG msg_;
 
@@ -110,33 +133,49 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
             if (msg_.message == WM_QUIT)
                 break;
         }
-        static vec2 top_left{ 100.f, 100.f };
-        static vec2 size{ 100.f, 100.f };
-        static vec2 pos{ 0.f, 0.f };
-        //renderer.add_rect_filled_multicolor(top_left, size, red, red, yellow, yellow);
-        //renderer.add_triangle_filled_multicolor({ 300.f, 300.f }, { 450.f, 100.f }, top_left, yellow, blue, green);
-        //renderer.add_text({ 0.f, 0.f }, L"lmaoooooo", blue, 10.f);
-        // renderer.add_text({ 200.f, 200.f }, L"added a text renderer", blue, 100.f);
-        for (auto& w : widgets)
+        
+        //renderer.add_circle_filled({ 100, 100 }, 33.f, blue, 32);
+        //renderer.add_circle({ 500, 500 }, 25.f, green, 20);
+        //renderer.add_circle_filled({ 100, 200 }, 75.f, red, 32);
+        //renderer.add_circle_filled({ 100, 100 }, 33.f, { 1.f, 0.f, 1.f, 1.f }, 32);
+        //renderer.add_circle({ 100, 100 }, 80, red, 32);
+        //renderer.add_circle({300, 100}, 75, blue, 12);
+        //renderer.add_circle_filled({ 500, 100 }, 90, blue, 20);
+        //
+        //renderer.add_line({ 100, 200 }, { 600, 200 }, yellow);
+        //renderer.add_line_multicolor({ 100, 220 }, { 600, 220 }, red, blue);
+        //renderer.add_triangle({ 100, 350 }, { 150, 250 }, { 200, 350 }, green);
+        //renderer.add_triangle_filled({ 250, 350 }, { 300, 250 }, { 350, 350 }, blue);
+        //renderer.add_triangle_filled_multicolor({ 400, 350 }, { 450, 250 }, { 500, 350 }, blue, red, green);
+        //renderer.add_rect_filled({ 100, 400 }, { 200, 200 }, white);
+        //renderer.add_rect_filled_multicolor({ 350, 400 }, { 200, 200 }, red, blue, red, blue);
+        //renderer.add_rect_filled_multicolor({ 600, 400 }, { 200, 200 }, red, green, yellow, blue);
+        //
+        //renderer.add_polyline(points, sizeof(points) / sizeof(vec2), red);
+        //renderer.add_3d_wire_frame({ 500, 650 }, { 100, 100, 20 }, blue);
+        //renderer.add_frame({ 650, 650 }, { 100, 75 }, 5.f, green);
+        //renderer.add_frame({ 775, 650 }, { 200, 300 }, 10.f, {.5f, 0.f, 0.f, .5f});
+        //
+        //renderer.add_text({ 50, 800 }, L"example text", white, 100.f, text_flags::center_align);
+        //btn.draw();
+        
+        for (auto w : widgets)
             w->draw();
 
-        //renderer.add_3d_wire_frame(top_left, { 200.f, 200.f, 50.f }, yellow);
-
-        //renderer.add_circle_filled({ 500.f, 500.f }, 500.f, red, 32);
-        //renderer.add_line(top_left, { 500.f, 500.f }, blue);
-        //renderer.add_line_multicolor({ -.5f, .5f }, blue, { .5f, -.5f }, green);
+        //renderer.add_circle({ 100.f, 100.f }, 10.f, blue, 20);
         renderer.draw();
     }
 
     renderer.cleanup();
+    for (auto p : widgets)
+        delete p;
 }
 
 int main()
 {
-    std::string str{};
-    str.reserve(129);
-    std::cout << str.size() << std::endl;
-    std::cout << str.capacity() << std::endl;
+    mouse_state ms{};
+
+    std::cout << ms.state+0 << std::endl;
 
 
     return 0;

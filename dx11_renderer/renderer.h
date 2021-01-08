@@ -78,7 +78,7 @@ public:
 	void add_polyline(const vec2* points, size_t size, const color& color);
 
 	// adds a multicolored line from start to end
-	void add_line_multicolor(const vec2& start, const color& start_color, const vec2& end, const color& end_color);
+	void add_line_multicolor(const vec2& start, const vec2& end, const color& start_color, const color& end_color);
 	
 	// add a rectangle 
 	void add_rect_filled(const vec2& top_left, const vec2& size, const color& color);
@@ -113,25 +113,26 @@ public:
 	// add an outlined frame
 	void add_outlined_frame(const vec2& top_left, const vec2& size, float thickness, float outline_thickness, const color& color_, const color& outline_color);
 
-	// add text
-	void add_text(const vec2& pos, const std::wstring& text, const color& color, float font_size, text_flags flags = text_flags::left_align);
+	// add text, top_left and size are for the text bounding box, see text_flags enum for flags
+	void add_text(const vec2& top_left, const vec2& size, const std::wstring& text, const color& color, float font_size, text_align flags = text_align::left_top);
 
 private:
 	bool initialized;
 
-	IDXGISwapChain*			p_swapchain;      // swapchain ptr
-	ID3D11Device*			p_device;         // d3d device interface ptr
-	ID3D11DeviceContext*	p_device_context; // d3d device context ptr
-	ID3D11RenderTargetView* p_backbuffer;     // backbuffer ptr
-	ID3D11InputLayout*		p_layout;         // layout ptr
-	ID3D11BlendState*	    p_blend_state;    // blend state ptr
-	ID3D11VertexShader*		p_vertex_shader;  // vertex shader ptr
-	ID3D11PixelShader*		p_pixel_shader;   // pixel shader ptr
-	ID3D11Buffer*			p_vertex_buffer;  // vertex buffer ptr
-	ID3D11Buffer*			p_screen_projection_buffer; // screen projection buffer ptr
-
-	IFW1Factory*			p_font_factory; // font factory ptr
-	IFW1FontWrapper*		p_font_wrapper;  // font wrapper ptr
+	IDXGISwapChain*			 p_swapchain;      // swapchain ptr
+	ID3D11Device*			 p_device;         // d3d device interface ptr
+	ID3D11DeviceContext*	 p_device_context; // d3d device context ptr
+	ID3D11RenderTargetView*  p_backbuffer;     // backbuffer ptr
+	ID3D11InputLayout*		 p_layout;         // layout ptr
+	ID3D11BlendState*	     p_blend_state;    // blend state ptr
+	ID3D11DepthStencilState* p_depth_stencil;  // depth stencil ptr
+	ID3D11VertexShader*		 p_vertex_shader;  // vertex shader ptr
+	ID3D11PixelShader*		 p_pixel_shader;   // pixel shader ptr
+	ID3D11Buffer*			 p_vertex_buffer;  // vertex buffer ptr
+	ID3D11Buffer*			 p_screen_projection_buffer; // screen projection buffer ptr
+							 
+	IFW1Factory*			 p_font_factory; // font factory ptr
+	IFW1FontWrapper*		 p_font_wrapper;  // font wrapper ptr
 
 	draw_list default_draw_list; // default draw list, we should only need 1 draw list. In the future we could add more
 	DirectX::XMMATRIX screen_projection;
@@ -140,7 +141,7 @@ private:
 	void add_vertex(const vertex& vertex, const D3D_PRIMITIVE_TOPOLOGY type);
 
 	// adds multiple vertices of the same typr to the defualt draw list
-	void add_vertices(const vertex* p_vertices, const size_t vertex_count, const D3D_PRIMITIVE_TOPOLOGY type);
+	void add_vertices(vertex* p_vertices, const size_t vertex_count, const D3D_PRIMITIVE_TOPOLOGY type);
 
 	// process errors coming from the renderer
 	void handle_error(const char* );
@@ -153,6 +154,8 @@ private:
 	void setup_input_layout();
 	void setup_vertex_buffer();
 	void setup_blend_state();
+	void setup_rasterizer_state();
+	void setup_depth_stencil_state();
 	void setup_screen_projection();
 	void setup_font_renderer(std::wstring font);
 };

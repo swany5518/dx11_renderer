@@ -84,11 +84,28 @@ struct color
 };
 
 // text formatting flags
-enum class text_flags
+enum class text_align : uint32_t
 {
-	left_align   = FW1_LEFT,
-	center_align = FW1_CENTER,
-	right_align  = FW1_RIGHT
+	// horizontal alignment
+	left       = FW1_LEFT,
+	center     = FW1_CENTER,
+	right      = FW1_RIGHT,
+
+	// vertical alignment
+	top        = FW1_TOP,
+	middle     = FW1_VCENTER,
+	bottom     = FW1_BOTTOM,
+
+	// combined alignment
+	left_top		= left	 | top,
+	left_middle		= left	 | middle,
+	left_bottom		= left	 | bottom,
+	center_top		= center | top,
+	center_middle	= center | middle,
+	center_bottom	= center | bottom,
+	right_top		= right  | top,
+	right_middle	= right	 | middle,
+	right_bottom	= right  | bottom,
 };
 
 // a struct that contains position and color information that the gpu will process
@@ -108,7 +125,7 @@ struct vertex
 	{}
 
 	vertex(const vec2& pos, const color& rgba) :
-		x(pos.x), y(pos.y), z(1.f),
+		x(pos.x), y(pos.y), z(0.f),
 		r(rgba.r), g(rgba.g), b(rgba.b), a(rgba.a)
 	{}
 
@@ -121,6 +138,14 @@ struct vertex
 		x(x), y(y), z(z),
 		r(rgba.r), g(rgba.g), b(rgba.b), a(rgba.a)
 	{}
+
+	void set_color(const color& new_color)
+	{
+		r = new_color.r;
+		g = new_color.g;
+		b = new_color.b;
+		a = new_color.a;
+	}
 
 	void operator*=(float scalar)
 	{
