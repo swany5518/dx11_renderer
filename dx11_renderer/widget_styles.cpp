@@ -2,6 +2,34 @@
 
 #include "widget_styles.h"
 
+//
+// text_style definitions
+//
+
+text_style::text_style() :
+	size(14.f),
+	ol_thckns(0.f),
+	clr({0.f, 0.f, 0.f, 1.f}),
+	ol_clr({ 0.f, 0.f, 0.f, 0.f }),
+	bg_clr({ 0.f, 0.f, 0.f, 0.f })
+{ }
+
+text_style::text_style(float font_size, const color& text_color) :
+	size(font_size),
+	ol_thckns(0.f),
+	clr(text_color),
+	ol_clr({0.f, 0.f, 0.f, 0.f}),
+	bg_clr({0.f, 0.f, 0.f, 0.f})
+{ }
+
+text_style::text_style(float font_size, float outline_thickness, const color& text_color, const color& outline_color, const color& background_color) :
+	size(font_size),
+	ol_thckns(outline_thickness),
+	clr(text_color),
+	ol_clr(outline_color),
+	bg_clr(background_color)
+{ }
+
 std::string text_style::to_string() const
 {
 	return "text_style{\n" +
@@ -12,6 +40,31 @@ std::string text_style::to_string() const
 		bg_clr.to_string() + " }";
 }
 
+//
+// border style definitions
+//
+
+border_style::border_style() :
+	thckns(1.f),
+	ol_thckns(0.f),
+	clr({0.f, 0.f, 0.f, 1.f}),
+	ol_clr({0.f, 0.f, 0.f, 0.f})
+{ }
+
+border_style::border_style(float thickness, const color& border_color) :
+	thckns(thickness),
+	ol_thckns(0.f),
+	clr(border_color),
+	ol_clr({0.f, 0.f, 0.f, 0.f})
+{ }
+
+border_style::border_style(float thickness, float outline_thickness, const color& border_color, const color& outline_color) :
+	thckns(thickness),
+	ol_thckns(outline_thickness),
+	clr(border_color),
+	ol_clr(outline_color)
+{ }
+
 std::string border_style::to_string() const
 {
 	return "border_style{\n" +
@@ -21,6 +74,31 @@ std::string border_style::to_string() const
 		ol_clr.to_string() + " }";
 }
 
+//
+// multicolored rectangle definitions
+//
+
+mc_rect::mc_rect() :
+	tl_clr({0.f, 0.f, 0.f, 0.f}),
+	tr_clr({0.f, 0.f, 0.f, 0.f}),
+	bl_clr({0.f, 0.f, 0.f, 0.f}),
+	br_clr({0.f, 0.f, 0.f, 0.f})
+{ }
+
+mc_rect::mc_rect(const color& rect_color) :
+	tl_clr(rect_color),
+	tr_clr(rect_color),
+	bl_clr(rect_color),
+	br_clr(rect_color)
+{ }
+
+mc_rect::mc_rect(const color& top_left, const color& top_right, const color& bottom_left, const color& bottom_right) :
+	tl_clr(top_left),
+	tr_clr(top_right),
+	bl_clr(bottom_left),
+	br_clr(bottom_right)
+{ }
+
 std::string mc_rect::to_string() const
 {
 	return "mc_rect{\n" +
@@ -29,6 +107,26 @@ std::string mc_rect::to_string() const
 		bl_clr.to_string() + ",\n" +
 		br_clr.to_string() + " }";
 }
+
+//
+// checkbox style definitions
+//
+
+checkbox_style::checkbox_style() :
+	text(),
+	border(),
+	bg(),
+	check({1.f, 1.f, 1.f, 1.f}),
+	gap(3.f)
+{ }
+
+checkbox_style::checkbox_style(const text_style& text, const border_style& border, const mc_rect& bg, const mc_rect& check, float gap) :
+	text(text),
+	border(border),
+	bg(bg),
+	check(check),
+	gap(gap)
+{ }
 
 std::string checkbox_style::to_string() const
 {
@@ -40,13 +138,47 @@ std::string checkbox_style::to_string() const
 		std::to_string(gap) + "\n}";
 }
 
+//
+// button style definitions
+//
+
+button_style::button_style() :
+	text(),
+	border(),
+	bg()
+{ }
+
+button_style::button_style(const text_style& text, const border_style& border, const mc_rect& bg) :
+	text(text),
+	border(border),
+	bg(bg)
+{ }
+
 std::string button_style::to_string() const
 {
-	return "checkbox_style{ " +
+	return "button_style{ " +
 		text.to_string() + ",\n" +
 		border.to_string() + ",\n" +
 		bg.to_string() + " }";
 }
+
+//
+// slider style definitions
+//
+
+slider_style::slider_style() :
+	text(),
+	border(),
+	bg(),
+	clr({ 1.f, 1.f, 1.f, 1.f })
+{ }
+
+slider_style::slider_style(const text_style& text, const border_style& border, const mc_rect& bg, const mc_rect& clr) :
+	text(text),
+	border(border),
+	bg(bg),
+	clr(clr)
+{ }
 
 std::string slider_style::to_string() const
 {
@@ -55,6 +187,10 @@ std::string slider_style::to_string() const
 		border.to_string() + ",\n" +
 		bg.to_string() + " }";
 }
+
+//
+// text entry style definitions
+//
 
 std::string text_entry_style::to_string() const
 {
@@ -65,6 +201,10 @@ std::string text_entry_style::to_string() const
 		bg.to_string() + " }";
 }
 
+//
+// combo box style definitions
+//
+
 std::string combo_box_style::to_string() const
 {
 	return "combo_box_style{ " +
@@ -72,6 +212,10 @@ std::string combo_box_style::to_string() const
 		border.to_string() + ",\n" +
 		bg.to_string() + " }";
 }
+
+//
+// color picker style definitions
+//
 
 std::string color_picker_style::to_string() const
 {

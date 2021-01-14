@@ -17,6 +17,10 @@ struct text_style
 	color ol_clr;		// text outline color
 	color bg_clr;		// text background color
 
+	text_style();
+	text_style(float font_size, const color& text_color);
+	text_style(float font_size, float outline_thickness, const color& text_color, const color& outline_color, const color& background_color);
+
 	// return string with styles required code
 	std::string to_string() const; 
 };
@@ -29,6 +33,10 @@ struct border_style
 	color clr;			// border color
 	color ol_clr;		// border outline color
 
+	border_style();
+	border_style(float thickness, const color& border_color);
+	border_style(float thickness, float outline_thickness, const color& border_color, const color& outline_color);
+
 	// print out the style's required code
 	std::string to_string() const;
 };
@@ -40,6 +48,10 @@ struct mc_rect
 	color tr_clr;	// top right color
 	color bl_clr;	// bottom left color
 	color br_clr;	// bottom right color
+
+	mc_rect();
+	mc_rect(const color& rect_color);
+	mc_rect(const color& top_left, const color& top_right, const color& bottom_left, const color& bottom_right);
 
 	// print out the style's required code
 	std::string to_string() const;
@@ -57,6 +69,9 @@ struct checkbox_style
 	mc_rect check;		 // checkbox check styling
 	float gap;			 // checkbox check gap from border
 
+	checkbox_style();
+	checkbox_style(const text_style& text, const border_style& border, const mc_rect& bg, const mc_rect& check, float gap);
+
 	std::string to_string() const;
 };
 
@@ -65,6 +80,9 @@ struct button_style
 	text_style text;	 // button text styling
 	border_style border; // button border styling
 	mc_rect bg;			 // button background style
+
+	button_style();
+	button_style(const text_style& text, const border_style& border, const mc_rect& bg);
 
 	std::string to_string() const;
 };
@@ -75,6 +93,9 @@ struct slider_style
 	border_style border; // slider border styling
 	mc_rect bg;			 // slider background styling
 	mc_rect clr;		 // slider bar color
+
+	slider_style();
+	slider_style(const text_style& text, const border_style& border, const mc_rect& bg, const mc_rect& clr);
 
 	std::string to_string() const;
 };
