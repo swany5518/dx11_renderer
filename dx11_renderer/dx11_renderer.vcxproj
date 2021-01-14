@@ -126,7 +126,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3dx10d.lib;d3dx11d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,7 +141,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -155,7 +155,10 @@
     </ClCompile>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="renderer.cpp" />
+    <ClCompile Include="renderer_utils.cpp" />
     <ClCompile Include="widgets.cpp" />
+    <ClCompile Include="widget_styles.cpp" />
+    <ClCompile Include="widget_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="example_renderer.h">
@@ -163,9 +166,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="renderer.h" />
-    <ClInclude Include="renderer_utils.hpp" />
-    <ClInclude Include="shaders.hpp" />
+    <ClInclude Include="renderer_utils.h" />
     <ClInclude Include="widgets.h" />
+    <ClInclude Include="widget_styles.h" />
+    <ClInclude Include="widget_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FW1FontWrapper\FW1FontWrapper.vcxproj">

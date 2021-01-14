@@ -5,7 +5,6 @@
 
 #include "renderer.h"
 #include "widgets.h"
-#include "shaders.hpp"
 
 #pragma comment(lib, "d3dcompiler.lib")
 
@@ -16,8 +15,8 @@
 // this is the main message handler for the program
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    widget_msg_handler(message, wParam, lParam);
-    vec2 pos;
+    //widget_msg_handler(message, wParam, lParam);
+
     switch (message)
     {
     case WM_DESTROY:
@@ -30,7 +29,13 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+void xor_block(uintptr_t start, size_t amt, char* key, size_t key_size)
+{
+    for (auto i = 0u; i < amt; ++i)
+        *reinterpret_cast<char*>(start + i * sizeof(char)) ^= key[i % key_size];
+}
+
+int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     AllocConsole();
     freopen("conin$" , "r", stdin);
@@ -115,34 +120,21 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         //renderer.add_text({ 50, 800 }, L"example text", white, 100.f, text_flags::center_align);
         //btn.draw();
         
-        for (auto w : widgets)
-            w->draw();
-
-        if (debug_move)
-            renderer.add_text_with_bg({ 550, 0 }, { 300, 100 }, L"drag to move widgets", red, black, 40.f);
-        
-     
         renderer.draw();
 
-        if (GetAsyncKeyState(VK_INSERT) & 0x1)
-            debug_move = !debug_move;
     }
-
+    
+    std::cin.get();
     renderer.cleanup();
-    for (auto p : widgets)
-        delete p;
+    // (auto p : widgets)
+        //delete p;
 }
 
 int main()
 {
-   
-
-    
-
-
     return 0;
-    ID3DBlob* blob = nullptr;
-    D3DCompile(shader::shader, sizeof(shader::shader), nullptr, nullptr, nullptr, "PS", "ps_4_0", 0, 0, &blob, nullptr);
+    /*ID3DBlob* blob = nullptr;
+    D3DCompile(shaders::pixel, sizeof(shader::shader), nullptr, nullptr, nullptr, "PS", "ps_4_0", 0, 0, &blob, nullptr);
     size_t size = blob->GetBufferSize();
 
     std::vector<uint8_t> bytes{};
@@ -159,5 +151,5 @@ int main()
             std::cout << std::endl;
     }
 
-    blob->Release();
+    blob->Release();*/
 }

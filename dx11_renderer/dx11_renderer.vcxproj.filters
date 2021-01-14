@@ -27,11 +27,17 @@
     <ClCompile Include="widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="widget_styles.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="widget_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="renderer_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="shaders.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -41,7 +47,13 @@
     <ClInclude Include="widgets.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="renderer_utils.hpp">
+    <ClInclude Include="widget_styles.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="widget_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="renderer_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

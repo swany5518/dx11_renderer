@@ -1,12 +1,157 @@
 #pragma once
 
-#include <cstdint>
+#include <string>
 
-// raw bytes of compiled shaders from
-// D3DX11CompileFromFileW(L"shaders.shader", 0, 0, "VShader", "vs_4_0", 0, 0, 0, &VS, 0, 0);
-// D3DX11CompileFromFileW(L"shaders.shader", 0, 0, "PShader", "ps_4_0", 0, 0, 0, &PS, 0, 0);
+#include "../FW1FontWrapper/Source/FW1FontWrapper.h"
 
-namespace shader
+#define PI 3.141592654f
+#define MAX_DRAW_LIST_VERTICES 0x10000
+
+// struct for 2d position
+struct vec2
+{
+	float x, y;
+
+	vec2();
+
+	vec2(float x, float y);
+
+	vec2(int x, int y);
+
+	bool operator==(const vec2& other) const;
+
+	vec2 operator-(float amount) const;
+
+	vec2 operator-(const vec2& other) const;
+
+	vec2 operator+(float amount) const;
+
+	vec2 operator+(const vec2& other) const;
+
+	vec2 operator/(const vec2& other) const;
+
+	vec2 operator/(float amount) const;
+
+	vec2 operator*(float amount) const;
+
+	vec2 operator*(const vec2& other) const;
+
+	std::string to_string() const;
+
+	// higher y corresponds to a smaller x value
+	bool higher_or_leftmost(const vec2& other) const;
+
+	bool rightmost_or_higher(const vec2& other) const;
+};
+
+// struct for 3d position
+struct vec3
+
+{
+	float x, y, z;
+
+	vec3(float x, float y, float z);
+
+	std::string to_string() const;
+	
+};
+
+// struct for rgba colors
+struct color
+{
+	float r, g, b, a;
+
+	color(float r, float g, float b, float a);
+
+	void operator+=(float amount);
+
+	float& operator[](int index);
+
+	// convert float 4 rgba to uint32 hex abgr
+	uint32_t to_hex_abgr() const;
+
+	std::string to_string() const;
+};
+
+// text formatting flags
+enum class text_align : uint32_t
+{
+	// horizontal alignment
+	left       = FW1_LEFT,
+	center     = FW1_CENTER,
+	right      = FW1_RIGHT,
+
+	// vertical alignment
+	top        = FW1_TOP,
+	middle     = FW1_VCENTER,
+	bottom     = FW1_BOTTOM,
+
+	// combined alignment
+	left_top		= left	 | top,
+	left_middle		= left	 | middle,
+	left_bottom		= left	 | bottom,
+	center_top		= center | top,
+	center_middle	= center | middle,
+	center_bottom	= center | bottom,
+	right_top		= right  | top,
+	right_middle	= right	 | middle,
+	right_bottom	= right  | bottom,
+};
+
+// a struct that contains position and color information that the gpu will process
+struct vertex
+{
+	float x, y, z;
+	float r, g, b, a;
+
+	vertex();
+
+	vertex(float x, float y, float z, float r, float g, float b, float a);
+
+	vertex(const vec2& pos, const color& rgba);
+
+	vertex(const vec3& pos, const color& rgba);
+
+	vertex(float x, float y, float z, const color& rgba);
+
+	void set_color(const color& new_color);
+
+	void operator*=(float scalar);
+
+	void operator+=(float addition);
+
+	void operator+=(const vec2& add);
+};
+
+// a struct that contains counts and primitive topology type for a vertex or vertices
+struct batch
+{
+	D3D_PRIMITIVE_TOPOLOGY type;
+	size_t vertex_count;
+
+	batch(D3D_PRIMITIVE_TOPOLOGY type, size_t vertex_count);
+};
+
+// function for safely releasing com object pointers
+template <typename Ty>
+inline void safe_release(Ty com_ptr)
+{
+	static_assert(std::is_pointer<Ty>::value, "safe_release - invalid com_ptr");
+	static_assert(std::is_base_of<IUnknown, std::remove_pointer<Ty>::type>::value, "safe_release - com_ptr not a com object");
+	if (com_ptr)
+	{
+		com_ptr->Release();
+		com_ptr = 0;
+	}
+}
+
+// function for calculating a circles vertex position
+inline float calc_theta(size_t vertex_index, size_t total_points)
+{
+	return 2.f * PI * static_cast<float>(vertex_index) / static_cast<float>(total_points);
+}
+
+namespace shaders
 {
 	inline uint8_t vertex[] = {
 0x44, 0x58, 0x42, 0x43, 0xC1, 0xDE, 0xD8, 0xFD, 0x8A, 0xAE, 0x60, 0x93, 0x38, 0xD0, 0x33, 0xBB, 0x96, 0x4F, 0x24, 0x79, 0x01, 0x00, 0x00, 0x00, 0x0C, 0x03, 0x00, 0x00, 0x05, 0x00,
@@ -55,60 +200,4 @@ namespace shader
 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
-
-	inline const char shader[] = R"(cbuffer screen_projection_buffer : register(b0)
-	{
-		matrix projection;
-	};
-	 
-	struct VS_OUTPUT
-	{
-		float4 pos : SV_POSITION;
-		float4 col : COLOR;
-	};
-	 
-	struct VS_INPUT
-	{
-		float4 pos : POSITION;
-		float4 col : COLOR;
-	};
-	 
-	VS_OUTPUT VS(VS_INPUT input)
-	{
-		VS_OUTPUT output;
-	 
-		output.pos = mul(projection, float4(input.pos.xy, 0.f, 1.f));
-		output.col = input.col;
-	 
-		return output;
-	}
-	 
-	float4 PS(VS_OUTPUT input) : SV_TARGET
-	{
-		return input.col;
-	})";
-
-	inline const char old_shader[] = R"(
-	struct VOut
-	{
-		float4 position : SV_POSITION;
-		float4 color : COLOR;
-	};
-
-	VOut VShader(float4 position : POSITION, float4 color : COLOR)
-	{
-		VOut output;
-
-		output.position = position;
-		output.color = color;
-
-		return output;
-	}
-
-
-	float4 PShader(float4 position : SV_POSITION, float4 color : COLOR) : SV_TARGET
-	{
-		return color;
-	}
-)";
 }

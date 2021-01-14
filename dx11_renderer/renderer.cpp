@@ -6,8 +6,9 @@
 // [public] renderer utilities
 //
 
-void renderer::initialize(HWND hwnd, std::wstring font)
+void renderer::initialize(HWND hwnd, const std::wstring& font_family)
 {
+	font = font_family;
 	setup_device_and_swapchain(hwnd);
 	setup_backbuffer();
 	setup_viewport(hwnd);
@@ -35,7 +36,7 @@ void renderer::draw()
 	// only draw draw list vertices if size > 0
 	if (default_draw_list.vertices.size())
 	{
-		int count = 0;
+		size_t count = 0u;
 		float z_order = 0.f;
 		for (auto& batch : default_draw_list.batch_list)
 		{
@@ -60,7 +61,7 @@ void renderer::draw()
 		for (auto& batch : default_draw_list.batch_list)
 		{
 			p_device_context->IASetPrimitiveTopology(batch.type);
-			p_device_context->Draw(batch.vertex_count, buffer_index);
+			p_device_context->Draw(static_cast<UINT>(batch.vertex_count), static_cast<UINT>(buffer_index));
 			buffer_index += batch.vertex_count;
 		}
 	}
@@ -502,6 +503,13 @@ void renderer::add_outlined_frame(const vec2& top_left, const vec2& size, float 
 	add_frame(top_left, size, thickness, frame_color);
 }
 
+vec2 renderer::measure_text(const std::wstring& text, float text_size)
+{
+	FW1_RECTF in{};
+	auto rect = p_font_wrapper->MeasureString(text.c_str(), font.c_str(), text_size, &in, FW1_LEFT | FW1_NOWORDWRAP);
+	return { rect.Right - rect.Left, rect.Bottom - rect.Top };
+}
+
 //
 // [public] constructors
 //
@@ -556,7 +564,7 @@ void renderer::setup_device_and_swapchain(HWND hwnd)
 
 void renderer::setup_backbuffer()
 {
-	ID3D11Texture2D* p_backbuffer_texture;
+	ID3D11Texture2D* p_backbuffer_texture = nullptr;
 
 	if (FAILED(p_swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&p_backbuffer_texture)))
 		handle_error("setup_backbuffer - failed to get backbuffer texture");
@@ -580,8 +588,8 @@ void renderer::setup_viewport(HWND hwnd)
 	ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
 	viewport.TopLeftX = 0;
 	viewport.TopLeftY = 0;
-	viewport.Width = wnd_size.right - wnd_size.left;
-	viewport.Height = wnd_size.bottom - wnd_size.top;
+	viewport.Width = static_cast<float>(wnd_size.right - wnd_size.left);
+	viewport.Height = static_cast<float>(wnd_size.bottom - wnd_size.top);
 	viewport.MinDepth = 0.f;
 	viewport.MaxDepth = 1.f;
 
@@ -590,10 +598,10 @@ void renderer::setup_viewport(HWND hwnd)
 
 void renderer::setup_shaders()
 {
-	if (FAILED(p_device->CreateVertexShader(shader::vertex, sizeof(shader::vertex), NULL, &p_vertex_shader)))
+	if (FAILED(p_device->CreateVertexShader(shaders::vertex, sizeof(shaders::vertex), NULL, &p_vertex_shader)))
 		handle_error("renderer - failed to create vertex shader");
 
-	if (FAILED(p_device->CreatePixelShader(shader::pixel, sizeof(shader::pixel), NULL, &p_pixel_shader)))
+	if (FAILED(p_device->CreatePixelShader(shaders::pixel, sizeof(shaders::pixel), NULL, &p_pixel_shader)))
 		handle_error("renderer - failed to create pixel shader");
 
 	// set the shader objects
@@ -610,7 +618,7 @@ void renderer::setup_input_layout()
 		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
 	};
 
-	if (FAILED(p_device->CreateInputLayout(input_elem_desc, 2, shader::vertex, sizeof(shader::vertex), &p_layout)))
+	if (FAILED(p_device->CreateInputLayout(input_elem_desc, 2, shaders::vertex, sizeof(shaders::vertex), &p_layout)))
 		handle_error("renderer - failed to create input layout");
 
 	// this use to be after we set constant projection buffer

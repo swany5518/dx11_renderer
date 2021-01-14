@@ -1,6 +1,9 @@
 #pragma once
 
-#include <d3d11.h>
+#pragma warning(disable:6387)
+#pragma warning(disable:26812)
+#pragma warning(disable:26495)
+
 #include <cstdint>
 #include <cstddef>
 #include <cmath>
@@ -8,18 +11,12 @@
 #include <string>
 #include <unordered_map>
 #include <cassert>
-#include <D3DX10.h>
-#include <D3DX11.h>
+#include <d3dx11.h>
 #include <DirectXMath.h>
-#include "renderer_utils.hpp"
-#include "shaders.hpp"
 
 #pragma comment (lib, "d3d11.lib")
-#pragma comment (lib, "d3dx11.lib")
-#pragma comment (lib, "d3dx10.lib")
-#pragma warning(disable:6387)
 
-#define MAX_DRAW_LIST_VERTICES 0x10000
+#include "renderer_utils.h"
 
 // holds a vertex buffer and a batch list that our renderer will use
 class draw_list
@@ -66,7 +63,7 @@ public:
 	void draw();
 
 	// initialize renderer onto a window 
-	void initialize(HWND hwnd, std::wstring font = L"Verdana");
+	void initialize(HWND hwnd, const std::wstring& font_family = L"Consolas");
 
 	// cleanup renderer
 	void cleanup();
@@ -125,6 +122,9 @@ public:
 	// add outlined text with a background, this is not done in a good way so it could affect performance
 	void add_outlined_text_with_bg(const vec2& top_left, const vec2& size, const std::wstring& text, const color& text_color, const color& outline_color, const color& bg_color, float font_size, float shadow_size = 1.f, text_align text_flags = text_align::left_top);
 
+	// see how much space text will take up, returns the height and width text will take up
+	vec2 measure_text(const std::wstring& text, float text_size);
+
 private:
 	bool initialized;
 
@@ -145,6 +145,7 @@ private:
 
 	draw_list default_draw_list; // default draw list, we should only need 1 draw list. In the future we could add more
 	DirectX::XMMATRIX screen_projection;
+	std::wstring font;
 
 	// add a vertex to the draw list
 	void add_vertex(const vertex& vertex, const D3D_PRIMITIVE_TOPOLOGY type);
