@@ -129,6 +129,14 @@ struct slider : widget
 		style(style)
 	{ }
 
+	slider(const vec2& top_left, const vec2& size, const std::wstring& label, Ty min, Ty max, slider_style* style) :
+		widget(top_left, size, label),
+		value(nullptr),
+		min_value(min),
+		max_value(max),
+		style(style)
+	{ }
+
 	slider(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos, Ty* value, Ty min, Ty max, slider_style* style) :
 		widget(top_left, size, label, label_pos),
 		value(value),
@@ -142,6 +150,11 @@ struct slider : widget
 		return max_value - min_value;
 	}
 
+	void set_value_ptr(Ty* p_value)
+	{
+		value = p_value;
+	}
+
 	void on_lbutton_down(const vec2& mouse_position)
 	{
 		mouse_info.clicking = 1;
@@ -153,7 +166,7 @@ struct slider : widget
 		{
 			float ratio = std::clamp<float>(mouse_position.x - top_left.x, 0.f, size.x) / size.x;
 
-			if (std::is_integral_v<Ty>)
+			if (value != nullptr && std::is_integral_v<Ty>)
 				*value = static_cast<Ty>(std::round(static_cast<float>(get_range()) * ratio + static_cast<float>(min_value)));
 			else if (std::is_floating_point_v<Ty>)
 				*value = static_cast<Ty>(get_range() * ratio + min_value);
@@ -239,11 +252,14 @@ struct color_picker : widget
 	int active_slider_index;
 	inline static int instance_count;
 
+	color_picker(const vec2& top_left, const vec2& size, const std::wstring& label, color_picker_style* style);
 	color_picker(const vec2& top_left, const vec2& size, const std::wstring& label, color* p_color, color_picker_style* style);
 	color_picker(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos, color* p_color, color_picker_style* style);
 
 	// dynamically size positions and sizes based off the style, should be called on any style change
 	void calc_pos_and_sizes();
+
+	void set_color_ptr(color* p_color);
 
 	// check if a relative click is in any 4 of the rgba sliders, if so return the index of which one, else return -1
 	int slider_click_index(const vec2& relative_mouse_pos) const;

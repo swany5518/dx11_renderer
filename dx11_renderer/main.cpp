@@ -5,25 +5,70 @@
 
 #include "renderer.h"
 #include "widgets.h"
+#include "widget_list.h"
 
 #pragma comment(lib, "d3dcompiler.lib")
 
 // define the screen resolution
-#define SCREEN_WIDTH  1000
-#define SCREEN_HEIGHT 1000
+#define SCREEN_WIDTH  1200
+#define SCREEN_HEIGHT 1200
+
+widget_list widgets{};
 
 // this is the main message handler for the program
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    //widget_msg_handler(message, wParam, lParam);
+    auto get_window_pos = [hWnd]() -> vec2
+    {
+        RECT wnd_pos{};
+        GetWindowRect(hWnd, &wnd_pos);
+        return vec2{ static_cast<float>(wnd_pos.left), static_cast<float>(wnd_pos.top) };
+    };
 
+    static vec2 wnd_pos;
+    
     switch (message)
     {
+    case WM_CREATE:
+    case WM_MOVE:
+    case WM_SIZE:
+        wnd_pos = get_window_pos();
+        break;
+    case WM_MOUSEMOVE:
+        std::cout << "WM_MOUSEMOVE " << GET_X_LPARAM(lParam) << std::endl;
+        widgets.add_input_msg(widget_input{ vec2{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)} });
+        break;
+    case WM_LBUTTONDOWN:
+        SetCapture(hWnd);
+        widgets.add_input_msg(widget_input{ input_type::lbutton_down, vec2{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)} });
+        break;
+    case WM_LBUTTONUP:
+        std::cout << "WM_LBUTTONUP" << std::endl;
+        ReleaseCapture();
+        widgets.add_input_msg(widget_input{ input_type::lbutton_up, vec2{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)} });
+        break;
+    case WM_CHAR:
+        widgets.add_input_msg(static_cast<char>(wParam));
+        break;
     case WM_DESTROY:
     {
         PostQuitMessage(0);
         return 0;
     } break;
+    case WM_SETCURSOR:
+        //std::cout << "WM_SETCURSOR" << std::endl;
+        break;
+    case WM_NCHITTEST:
+        std::cout << "WM_HITTEST" << std::endl;
+        break;
+    case WM_MOUSELEAVE:
+        std::cout << "WM_MOUSELEAVE" << std::endl;
+        break;
+    case WM_NCMOUSELEAVE:
+        std::cout << "WM_NCMOUSELEAVE" << std::endl;
+        break;
+    default:
+        std::cout << "WM: " << message << std::endl;
     }
 
     return DefWindowProc(hWnd, message, wParam, lParam);
@@ -65,6 +110,14 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
     renderer renderer{};
     renderer.initialize(hWnd);
     widget::set_renderer(&renderer);
+
+    float val = 1.f;
+    slider_style style{ text_style{}, border_style{}, mc_rect{}, mc_rect{color{.5f, .5f, .5f, .5f}} };
+    slider<float> sldr{ vec2{ 600,500 }, vec2{ 100,20 }, L"lool", &val, 0.f, 1.f, &style };
+    widgets.add_widget(&sldr);
+   
+    widgets = get_slider_style_edit_list(&style);
+    widgets.add_widget(&sldr);
 
     color red{ 1.f, 0.f, 0.f, 1.f };
     color green{ 0.f, 1.f, 0.f, 1.f };
@@ -120,11 +173,12 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
         //renderer.add_text({ 50, 800 }, L"example text", white, 100.f, text_flags::center_align);
         //btn.draw();
         
+        widgets.draw_widgets();
         renderer.draw();
 
     }
     
-    std::cin.get();
+    //std::cin.get();
     renderer.cleanup();
     // (auto p : widgets)
         //delete p;
@@ -132,7 +186,7 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 
 int main()
 {
-    return 0;
+    
     /*ID3DBlob* blob = nullptr;
     D3DCompile(shaders::pixel, sizeof(shader::shader), nullptr, nullptr, nullptr, "PS", "ps_4_0", 0, 0, &blob, nullptr);
     size_t size = blob->GetBufferSize();

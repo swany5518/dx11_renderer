@@ -36,6 +36,9 @@
     <ClCompile Include="renderer_utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="widget_list.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="renderer.h">
@@ -54,6 +57,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="renderer_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="widget_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mouse_hk.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

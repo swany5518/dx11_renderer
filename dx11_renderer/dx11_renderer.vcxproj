@@ -157,6 +157,7 @@
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="renderer_utils.cpp" />
     <ClCompile Include="widgets.cpp" />
+    <ClCompile Include="widget_list.cpp" />
     <ClCompile Include="widget_styles.cpp" />
     <ClCompile Include="widget_utils.cpp" />
   </ItemGroup>
@@ -165,9 +166,11 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="mouse_hk.hpp" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="renderer_utils.h" />
     <ClInclude Include="widgets.h" />
+    <ClInclude Include="widget_list.h" />
     <ClInclude Include="widget_styles.h" />
     <ClInclude Include="widget_utils.h" />
   </ItemGroup>

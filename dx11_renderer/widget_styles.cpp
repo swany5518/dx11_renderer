@@ -8,9 +8,9 @@
 
 text_style::text_style() :
 	size(14.f),
-	ol_thckns(0.f),
-	clr({0.f, 0.f, 0.f, 1.f}),
-	ol_clr({ 0.f, 0.f, 0.f, 0.f }),
+	ol_thckns(1.f),
+	clr({1.f, 1.f, 1.f, 1.f}),
+	ol_clr({ 0.f, 0.f, 0.f, 1.f }),
 	bg_clr({ 0.f, 0.f, 0.f, 0.f })
 { }
 
@@ -45,7 +45,7 @@ std::string text_style::to_string() const
 //
 
 border_style::border_style() :
-	thckns(1.f),
+	thckns(2.f),
 	ol_thckns(0.f),
 	clr({0.f, 0.f, 0.f, 1.f}),
 	ol_clr({0.f, 0.f, 0.f, 0.f})
@@ -192,6 +192,27 @@ std::string slider_style::to_string() const
 // text entry style definitions
 //
 
+text_entry_style::text_entry_style() :
+	text(),
+	buf_text(),
+	border(),
+	bg({1.f, 1.f, 1.f, 1.f})
+{ }
+
+text_entry_style::text_entry_style(const text_style& text, const border_style& border, const mc_rect& bg) :
+	text(text),
+	buf_text(text),
+	border(border),
+	bg(bg)
+{ }
+
+text_entry_style::text_entry_style(const text_style& text, const text_style& buf_text, const border_style& border, const mc_rect& bg) :
+	text(text),
+	buf_text(buf_text),
+	border(border),
+	bg(bg)
+{ }
+
 std::string text_entry_style::to_string() const
 {
 	return "text_entry_style{ " + 
@@ -205,6 +226,24 @@ std::string text_entry_style::to_string() const
 // combo box style definitions
 //
 
+combo_box_style::combo_box_style() :
+	text(),
+	border(),
+	bg()
+{ }
+
+combo_box_style::combo_box_style(const text_style& text, const border_style& border) :
+	text(text),
+	border(border),
+	bg()
+{ }
+
+combo_box_style::combo_box_style(const text_style& text, const border_style& border, const mc_rect& bg) :
+	text(text),
+	border(border),
+	bg(bg)
+{ }
+
 std::string combo_box_style::to_string() const
 {
 	return "combo_box_style{ " +
@@ -216,6 +255,30 @@ std::string combo_box_style::to_string() const
 //
 // color picker style definitions
 //
+
+color_picker_style::color_picker_style() :
+	text(),
+	border(), 
+	bg(),
+	sldr_border(),
+	sldr_gap(3.f)
+{ }
+
+color_picker_style::color_picker_style(const text_style& text, const border_style& border, const mc_rect& bg) :
+	text(text),
+	border(border),
+	bg(bg),
+	sldr_border(),
+	sldr_gap(3.f)
+{ }
+
+color_picker_style::color_picker_style(const text_style& text, const border_style& border, const mc_rect& bg, const border_style& sldr_border, float sldr_gap) :
+	text(text),
+	border(border),
+	bg(bg),
+	sldr_border(sldr_border),
+	sldr_gap(sldr_gap)
+{ }
 
 std::string color_picker_style::to_string() const
 {

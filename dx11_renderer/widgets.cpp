@@ -8,7 +8,7 @@ widget::widget(const vec2& top_left, const vec2& size, const std::wstring& label
 	top_left(top_left),
 	size(size),
 	label(label),
-	label_pos(size.x, 0.f),
+	label_pos({size.x, 0.f}),
 	mouse_info({ 0.f, 0.f }),
 	active(true)
 { }
@@ -66,9 +66,7 @@ void widget::on_widget_move(const vec2& new_position)
 }
 
 void widget::on_key_down(char key) 
-{ 
-
-}
+{ }
 
 widget_type widget::get_type()
 {
@@ -240,6 +238,17 @@ widget_type combo_box::get_type()
 // color picker definitions
 //
 
+color_picker::color_picker(const vec2& top_left, const vec2& size, const std::wstring& label, color_picker_style* style) :
+	widget(top_left, size, label),
+	p_color(nullptr),
+	style(style),
+	active_slider_index(-1),
+	rgba_slider_size()
+{
+	instance_count++;
+	calc_pos_and_sizes();
+}
+
 color_picker::color_picker(const vec2& top_left, const vec2& size, const std::wstring& label, color* p_color, color_picker_style* style) :
 	widget(top_left, size, label),
 	p_color(p_color),
@@ -276,7 +285,11 @@ void color_picker::calc_pos_and_sizes()
 		rgba_slider_pos[i] = vec2{ border_padding, slider_y_start_pos + i * (style->sldr_gap + rgba_slider_size.y) };
 }
 
-// check if a relative click is in any 4 of the rgba sliders, if so return the index of which one, else return -1
+void color_picker::set_color_ptr(color* p_color)
+{
+	this->p_color = p_color;
+}
+
 int color_picker::slider_click_index(const vec2& relative_mouse_pos) const
 {
 	for (auto i = 0; i < 4; ++i)
@@ -321,7 +334,10 @@ void color_picker::on_lbutton_up(const vec2& mouse_position)
 
 void color_picker::on_drag(const vec2& new_position)
 {
-	if (active)
+	if (p_color == nullptr)
+		return;
+
+	if (active )
 	{
 		// check if relative click is inside any slider
 		auto relative = new_position - top_left;
@@ -340,6 +356,9 @@ void color_picker::on_drag(const vec2& new_position)
 
 void color_picker::draw()
 {
+	if (p_color == nullptr)
+		return;
+
 	static auto old_style = *style;
 	static int updated = 0;
 	if (old_style != *style)

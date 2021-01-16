@@ -45,7 +45,7 @@ struct mouse_state
 
 		struct
 		{
-			uint8_t clicked : 1; // if a widget was clicked
+			uint8_t clicked : 1;  // if a widget was clicked
 			uint8_t clicking : 1; // if a widget is being clicked
 			uint8_t hovering : 1; // if a widget is being hovered
 			uint8_t reserved : 5;
@@ -53,4 +53,26 @@ struct mouse_state
 	};
 
 	mouse_state(const vec2&);
+};
+
+// input type enum
+enum class input_type
+{
+	mouse_move,
+	lbutton_down,
+	lbutton_up,
+	key_press
+};
+
+// widget input messages that come from a mouse/kybd hook or wndproc
+struct widget_input
+{
+	input_type type; // type of the input
+	vec2 m_pos;		 // position of the mouse
+	char key;		 // key that was pressed
+
+	widget_input() = delete;
+	widget_input(const vec2& m_pos);
+	widget_input(char key);
+	widget_input(input_type type, const vec2& m_pos);
 };

@@ -98,7 +98,7 @@ struct slider_style
 	slider_style(const text_style& text, const border_style& border, const mc_rect& bg, const mc_rect& clr);
 
 	std::string to_string() const;
-};
+} inline default_slider_style{};
 
 struct text_entry_style
 {
@@ -106,6 +106,10 @@ struct text_entry_style
 	text_style buf_text; // text entry buffer text style
 	border_style border; // text entry border styling
 	mc_rect bg;			 // text entry background styling
+
+	text_entry_style();
+	text_entry_style(const text_style& text, const border_style& border, const mc_rect& bg);
+	text_entry_style(const text_style& text, const text_style& buf_text, const border_style& border, const mc_rect& bg);
 
 	std::string to_string() const;
 };
@@ -115,6 +119,10 @@ struct combo_box_style
 	text_style text;	 // combo box text styling
 	border_style border; // combo box border styling
 	mc_rect bg;			 // combo box background styling
+
+	combo_box_style();
+	combo_box_style(const text_style& text, const border_style& border);
+	combo_box_style(const text_style& text, const border_style& border, const mc_rect& bg);
 
 	std::string to_string() const;
 };
@@ -127,8 +135,12 @@ struct color_picker_style
 	border_style sldr_border; // color picker slider border styling
 	float sldr_gap;			  // color picker slider gap between sliders
 
+	color_picker_style();
+	color_picker_style(const text_style& text, const border_style& border, const mc_rect& bg);
+	color_picker_style(const text_style& text, const border_style& border, const mc_rect& bg, const border_style& sldr_border, float sldr_gap);
+
 	std::string to_string() const;
 
 	bool operator==(const color_picker_style&) const;
 	bool operator!=(const color_picker_style&) const;
-};
+} inline default_color_picker_style{};
