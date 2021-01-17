@@ -61,8 +61,10 @@ struct color
 {
 	float r, g, b, a;
 
+	color();
+	color(float rgba);
 	color(float r, float g, float b, float a);
-
+	
 	void operator+=(float amount);
 
 	float& operator[](int index);

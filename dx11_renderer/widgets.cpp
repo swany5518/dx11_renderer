@@ -9,6 +9,17 @@ widget::widget(const vec2& top_left, const vec2& size, const std::wstring& label
 	size(size),
 	label(label),
 	label_pos({size.x, 0.f}),
+	p_style(nullptr),
+	mouse_info({ 0.f, 0.f }),
+	active(true)
+{ }
+
+widget::widget(const vec2& top_left, const vec2& size, const std::wstring& label, style* p_style) :
+	top_left(top_left),
+	size(size),
+	label(label),
+	label_pos({ size.x, 0.f }),
+	p_style(p_style),
 	mouse_info({ 0.f, 0.f }),
 	active(true)
 { }
@@ -18,9 +29,25 @@ widget::widget(const vec2& top_left, const vec2& size, const std::wstring& label
 	size(size),
 	label(label),
 	label_pos(label_pos),
+	p_style(nullptr),
 	mouse_info({ 0.f, 0.f }),
 	active(true)
 { }
+
+widget::widget(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos, style* p_style) :
+	top_left(top_left),
+	size(size),
+	label(label),
+	label_pos(label_pos),
+	p_style(p_style),
+	mouse_info({ 0.f, 0.f }),
+	active(true)
+{ }
+
+void widget::set_style(style* p_style)
+{
+	this->p_style = p_style;
+}
 
 bool widget::contains(const vec2& pos)
 {
@@ -68,6 +95,11 @@ void widget::on_widget_move(const vec2& new_position)
 void widget::on_key_down(char key) 
 { }
 
+std::string widget::to_string(uint16_t indent_amt)
+{
+	return "";
+}
+
 widget_type widget::get_type()
 {
 	return widget_type::unknown;
@@ -78,15 +110,13 @@ widget_type widget::get_type()
 //
 
 checkbox::checkbox(const vec2& top_left, const vec2& size, const std::wstring& label, bool* value, checkbox_style* style) :
-	widget( top_left, size, label),
-	value(value),
-	style(style)
+	widget( top_left, size, label, style),
+	value(value)
 { }
 
 checkbox::checkbox(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos, bool* value, checkbox_style* style) :
-	widget( top_left, size, label, label_pos),
-	value(value),
-	style(style)
+	widget( top_left, size, label, label_pos, style),
+	value(value)
 { }
 
 void checkbox::on_lbutton_up(const vec2& mouse_position)
@@ -101,6 +131,7 @@ void checkbox::on_lbutton_up(const vec2& mouse_position)
 
 void checkbox::draw()
 {
+	auto style = static_cast<checkbox_style*>(p_style);
 	// add checkbox background
 	p_renderer->add_rect_filled_multicolor(top_left, size, style->bg.tl_clr, style->bg.tr_clr, style->bg.bl_clr, style->bg.br_clr);
 
@@ -120,22 +151,32 @@ widget_type checkbox::get_type()
 	return widget_type::checkbox;
 }
 
+std::string checkbox::to_string(uint16_t indent_amt)
+{
+	std::string tab_str(indent_amt, '\t');
+	std::string brace_str(indent_amt > 0 ? indent_amt - 1 : 0, '\t');
+
+	return brace_str + "checkbox" + '\n' + brace_str + "{\n" +
+		tab_str + top_left.to_string() + ", " + size.to_string() + "\n" +
+		tab_str + "L\"" + std::string(label.begin(), label.end()) + "\"," + label_pos.to_string() + "\n,/*VALUE PTR HERE*/nullptr, nullptr\n" +
+		brace_str + '}';
+}
+
 //
 // button definitions
 //
 
 button::button(const vec2& top_left, const vec2& size, const std::wstring& label, button_style* style) :
-	widget(top_left, size, label),
-	style(style)
+	widget(top_left, size, label, style)
 { }
 
 button::button(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos, button_style* style) :
-	widget(top_left, size, label, label_pos),
-	style(style)
+	widget(top_left, size, label, label_pos, style)
 { }
 
 void button::draw()
 {
+	auto style = static_cast<button_style*>(p_style);
 	// add button rect
 	p_renderer->add_rect_filled_multicolor(top_left, size, style->bg.tl_clr, style->bg.tr_clr, style->bg.bl_clr, style->bg.br_clr);
 
@@ -151,26 +192,35 @@ widget_type button::get_type()
 	return widget_type::button;
 }
 
+std::string button::to_string(uint16_t indent_amt)
+{
+	std::string tab_str(indent_amt, '\t');
+	std::string brace_str(indent_amt > 0 ? indent_amt - 1 : 0, '\t');
+
+	return brace_str + "button" + '\n' + brace_str + "{\n" +
+		tab_str + top_left.to_string() + ", " + size.to_string() + "\n" +
+		tab_str + "L\"" + std::string(label.begin(), label.end()) + "\"," + label_pos.to_string() + ", nullptr\n" +
+		brace_str + '}';
+}
+
 //
 // text entry definitions
 //
 
 text_entry::text_entry(const vec2& top_left, const vec2& size, const std::wstring& label, text_entry_style* style, uint32_t max_buffer_size, const vec2& buffer_offset) :
-	widget(top_left, size, label),
+	widget(top_left, size, label, style),
 	buffer(),
 	buffer_offset(buffer_offset),
-	max_buffer_size(max_buffer_size),
-	style(style)
+	max_buffer_size(max_buffer_size)
 {
 	buffer.reserve(max_buffer_size);
 }
 
 text_entry::text_entry(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos, text_entry_style* style, uint32_t max_buffer_size, const vec2& buffer_offset) :
-	widget(top_left, size, label, label_pos),
+	widget(top_left, size, label, label_pos, style),
 	buffer(),
 	buffer_offset(buffer_offset),
-	max_buffer_size(max_buffer_size),
-	style(style)
+	max_buffer_size(max_buffer_size)
 {
 	buffer.reserve(max_buffer_size);
 }
@@ -191,6 +241,7 @@ void text_entry::on_key_down(char key)
 
 void text_entry::draw()
 {
+	auto style = static_cast<text_entry_style*>(p_style);
 	// add our text entry background
 	p_renderer->add_rect_filled_multicolor(top_left, size, style->bg.tl_clr, style->bg.tr_clr, style->bg.bl_clr, style->bg.br_clr);
 
@@ -209,22 +260,33 @@ widget_type text_entry::get_type()
 	return widget_type::text_entry;
 }
 
+std::string text_entry::to_string(uint16_t indent_amt)
+{
+	std::string tab_str(indent_amt, '\t');
+	std::string brace_str(indent_amt > 0 ? indent_amt - 1 : 0, '\t');
+
+	return brace_str + "text_entry" + '\n' + brace_str + "{\n" +
+		tab_str + top_left.to_string() + ", " + size.to_string() + "\n" +
+		tab_str + "L\"" + std::string(label.begin(), label.end()) + "\"," + label_pos.to_string() + ", nullptr,\n" +
+		tab_str + std::to_string(max_buffer_size) + ',' + buffer_offset.to_string() + '\n' +
+		brace_str + '}';
+}
+
 //
 // combo box definitions
 //
 
 combo_box::combo_box(const vec2& top_left, const vec2& size, const std::wstring& label, combo_box_style* style) :
-	widget(top_left, size, label, {20.f, 0.f}),
-	style(style)
+	widget(top_left, size, label, {20.f, 0.f}, style)
 { }
 
 combo_box::combo_box(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos, combo_box_style* style) :
-	widget(top_left, size, label, label_pos),
-	style(style)
+	widget(top_left, size, label, label_pos, style)
 { }
 
 void combo_box::draw()
 {
+	auto style = static_cast<combo_box_style*>(p_style);
 	p_renderer->add_outlined_frame(top_left, size, style->border.thckns, style->border.ol_thckns, style->border.clr, style->border.ol_clr);
 	p_renderer->add_outlined_text_with_bg({ top_left.x + label_pos.x, top_left.y - style->text.size / 2.f - style->text.ol_thckns + label_pos.y }, size, label, style->text.clr, style->text.ol_clr, style->text.bg_clr, style->text.size);
 }
@@ -234,14 +296,24 @@ widget_type combo_box::get_type()
 	return widget_type::combo_box;
 }
 
+std::string combo_box::to_string(uint16_t indent_amt)
+{
+	std::string tab_str(indent_amt, '\t');
+	std::string brace_str(indent_amt > 0 ? indent_amt - 1 : 0, '\t');
+
+	return brace_str + "combo_box" + '\n' + brace_str + "{\n" +
+		tab_str + top_left.to_string() + ", " + size.to_string() + "\n" +
+		tab_str + "L\"" + std::string(label.begin(), label.end()) + "\"," + label_pos.to_string() + ", nullptr\n" +
+		brace_str + '}';
+}
+
 //
 // color picker definitions
 //
 
 color_picker::color_picker(const vec2& top_left, const vec2& size, const std::wstring& label, color_picker_style* style) :
-	widget(top_left, size, label),
+	widget(top_left, size, label, style),
 	p_color(nullptr),
-	style(style),
 	active_slider_index(-1),
 	rgba_slider_size()
 {
@@ -250,9 +322,8 @@ color_picker::color_picker(const vec2& top_left, const vec2& size, const std::ws
 }
 
 color_picker::color_picker(const vec2& top_left, const vec2& size, const std::wstring& label, color* p_color, color_picker_style* style) :
-	widget(top_left, size, label),
+	widget(top_left, size, label, style),
 	p_color(p_color),
-	style(style),
 	active_slider_index(-1),
 	rgba_slider_size()
 {
@@ -261,9 +332,8 @@ color_picker::color_picker(const vec2& top_left, const vec2& size, const std::ws
 }
 
 color_picker::color_picker(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos, color* p_color, color_picker_style* style) :
-	widget(top_left, size, label, label_pos),
+	widget(top_left, size, label, label_pos, style),
 	p_color(p_color),
-	style(style),
 	active_slider_index(-1),
 	rgba_slider_size()
 {
@@ -273,6 +343,7 @@ color_picker::color_picker(const vec2& top_left, const vec2& size, const std::ws
 
 void color_picker::calc_pos_and_sizes()
 {
+	auto style = static_cast<color_picker_style*>(p_style);
 	// calculate header size and position (this is dependant on border thicknesses and text size)
 	border_padding = 2.f * (style->border.thckns + style->border.ol_thckns);
 	header_size = vec2{ size.x - border_padding * 2.f, p_renderer->measure_text(label, style->text.size).y };
@@ -359,7 +430,9 @@ void color_picker::draw()
 	if (p_color == nullptr)
 		return;
 
-	static auto old_style = *style;
+	auto style = static_cast<color_picker_style*>(p_style);
+
+	/*static auto old_style = *style;
 	static int updated = 0;
 	if (old_style != *style)
 	{
@@ -369,7 +442,7 @@ void color_picker::draw()
 			old_style = *style;
 			updated = 0;
 		}
-	}
+	}*/
 
 	// add background
 	p_renderer->add_rect_filled_multicolor(top_left, size, style->bg.tl_clr, style->bg.tr_clr, style->bg.bl_clr, style->bg.br_clr);
@@ -409,4 +482,15 @@ void color_picker::draw()
 widget_type color_picker::get_type()
 {
 	return widget_type::color_picker;
+}
+
+std::string color_picker::to_string(uint16_t indent_amt)
+{
+	std::string tab_str(indent_amt, '\t');
+	std::string brace_str(indent_amt > 0 ? indent_amt - 1 : 0, '\t');
+
+	return brace_str + "color_picker" + '\n' + brace_str + "{\n" +
+		tab_str + top_left.to_string() + ", " + size.to_string() + "\n" +
+		tab_str + "L\"" + std::string(label.begin(), label.end()) + "\"," + label_pos.to_string() + ", /*COLOR PTR HERE*/nullptr, nullptr\n" +
+		brace_str + '}';
 }

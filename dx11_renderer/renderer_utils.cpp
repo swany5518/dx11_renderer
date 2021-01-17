@@ -94,9 +94,17 @@ std::string vec3::to_string() const
 // color definitions
 //
 
+color::color() :
+	r(0.f), g(0.f), b(0.f), a(0.f)
+{ }
+
+color::color(float rgba) :
+	r(rgba), g(rgba), b(rgba), a(rgba)
+{ }
+
 color::color(float r, float g, float b, float a) :
 	r(r), g(g), b(b), a(a)
-{}
+{ }
 
 void color::operator+=(float amount)
 {
@@ -136,27 +144,27 @@ std::string color::to_string() const
 vertex::vertex() :
 	x(0.f), y(0.f), z(0.f),
 	r(0.f), g(0.f), b(0.f), a(0.f)
-{}
+{ }
 
 vertex::vertex(float x, float y, float z, float r, float g, float b, float a) :
 	x(x), y(y), z(z),
 	r(r), g(g), b(b), a(a)
-{}
+{ }
 
 vertex::vertex(const vec2& pos, const color& rgba) :
 	x(pos.x), y(pos.y), z(0.f),
 	r(rgba.r), g(rgba.g), b(rgba.b), a(rgba.a)
-{}
+{ }
 
 vertex::vertex(const vec3& pos, const color& rgba) :
 	x(pos.x), y(pos.y), z(pos.z),
 	r(rgba.r), g(rgba.g), b(rgba.b), a(rgba.a)
-{}
+{ }
 
 vertex::vertex(float x, float y, float z, const color& rgba) :
 	x(x), y(y), z(z),
 	r(rgba.r), g(rgba.g), b(rgba.b), a(rgba.a)
-{}
+{ }
 
 void vertex::set_color(const color& new_color)
 {

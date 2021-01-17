@@ -1,6 +1,17 @@
 #include "widget_list.h"
 
+//
+// owned widget definitions
+//
+
+owned_widget::owned_widget(const widget& wdgt, uint32_t owned_styles_idx) :
+	wdgt(wdgt),
+	owned_styles_idx(owned_styles_idx)
+{ }
+
+//
 // widget list definitions
+//
 
 widget_list::widget_list() :
 	top_left({0.f, 0.f}),
@@ -9,6 +20,8 @@ widget_list::widget_list() :
 	active(true),
 	move_mode(false),
 	widgets(),
+	owned_widgets(),
+	owned_styles(),
 	input_msgs()
 { }
 
@@ -19,6 +32,8 @@ widget_list::widget_list(const vec2& top_left, const vec2& size) :
 	active(true),
 	move_mode(false),
 	widgets(),
+	owned_widgets(),
+	owned_styles(),
 	input_msgs()
 { }
 
@@ -29,8 +44,28 @@ widget_list::widget_list(const vec2& top_left, const vec2& size, const mc_rect& 
 	active(true),
 	move_mode(false),
 	widgets(),
+	owned_widgets(),
+	owned_styles(),
 	input_msgs()
 { }
+
+widget_list::widget_list(const vec2& top_left, const vec2& size, const mc_rect& background, const std::vector<owned_widget>& owned_widgets, const std::vector<style>& owned_styles) :
+	top_left(top_left),
+	size(size),
+	background(background),
+	active(true),
+	move_mode(false),
+	widgets(),
+	owned_widgets(owned_widgets),
+	owned_styles(owned_styles),
+	input_msgs()
+{ 
+	for (auto& owned_widget : this->owned_widgets)
+	{
+		owned_widget.wdgt.set_style(&this->owned_styles[owned_widget.owned_styles_idx]);
+		widgets.push_back(&owned_widget.wdgt);
+	}
+}
 
 void widget_list::add_widget(widget* p_widget)
 {
@@ -147,11 +182,58 @@ void widget_list::set_active(bool active)
 void widget_list::set_move_mode(bool mode)
 {
 	move_mode = mode;
+
+	// if we want to move our widgets, we should deactivate them so they don't respond normally to mouse input
+	for (auto widget : widgets)
+		widget->active = !mode;
+}
+
+void widget_list::toggle_move_mode()
+{
+	move_mode = !move_mode;
+
+	for (auto widget : widgets)
+		widget->active = !move_mode;
+}
+
+bool widget_list::get_move_mode()
+{
+	return move_mode;
 }
 
 std::string widget_list::to_string()
 {
-	return "";
-}
+	std::string widgets_str{};
+	std::string styles_str{};
+	std::vector<style*> styles_to_save{};
 
-//inline static widget_list
+	for (auto w : widgets)
+	{
+		uint32_t style_idx = 0;
+		auto iterator = std::find(styles_to_save.begin(), styles_to_save.end(), w->p_style);
+		if (iterator == styles_to_save.end())
+		{
+			styles_to_save.push_back(w->p_style);
+			style_idx = styles_to_save.size() - 1; // index is last added
+		}
+		else
+			style_idx = std::distance(styles_to_save.begin(), iterator);
+
+		widgets_str += "\t\t{\n" + w->to_string(4) + ", " + std::to_string(style_idx) + "\n\t\t},\n";
+	}
+
+	for (auto s : styles_to_save)
+	{
+		styles_str += s->to_string(3) + ",\n";
+	}
+
+	return "widget_list\n{\n\t" +
+		top_left.to_string() + ',' + size.to_string() + ",\n" +
+		background.to_string(2) + ",\n\t" +
+		"std::vector<owned_widget>{\n" +
+		widgets_str +
+		"\t},\n" +
+		"std::vector<style>{\n" +
+		styles_str +
+		"}\n};";
+}

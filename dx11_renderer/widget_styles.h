@@ -8,8 +8,19 @@
 // generic styles most widgets will have
 //
 
+// base style every style inherits
+struct style
+{
+	std::string name;
+
+	style();
+	style(const std::string& name);
+
+	virtual std::string to_string(uint16_t indent_amt = 1) const;
+};
+
 // widget text styling
-struct text_style 
+struct text_style : style
 {
 	float size;			// text font size
 	float ol_thckns;	// text outline thickness
@@ -22,11 +33,11 @@ struct text_style
 	text_style(float font_size, float outline_thickness, const color& text_color, const color& outline_color, const color& background_color);
 
 	// return string with styles required code
-	std::string to_string() const; 
+	std::string to_string(uint16_t indent_amt = 1) const; 
 };
 
 // widget border styling
-struct border_style
+struct border_style : style
 {
 	float thckns;		// border thickness
 	float ol_thckns;	// border outline thickness
@@ -38,11 +49,11 @@ struct border_style
 	border_style(float thickness, float outline_thickness, const color& border_color, const color& outline_color);
 
 	// print out the style's required code
-	std::string to_string() const;
+	std::string to_string(uint16_t indent_amt = 1) const;
 };
 
 // multicolored rect, usually used for backgrounds or rects with gradients
-struct mc_rect
+struct mc_rect : style
 {
 	color tl_clr;	// top left color
 	color tr_clr;	// top right color
@@ -54,14 +65,14 @@ struct mc_rect
 	mc_rect(const color& top_left, const color& top_right, const color& bottom_left, const color& bottom_right);
 
 	// print out the style's required code
-	std::string to_string() const;
+	std::string to_string(uint16_t indent_amt = 1) const;
 };
 
 //
 // specific widget styles
 //
 
-struct checkbox_style
+struct checkbox_style : style
 {
 	text_style text;	 // checkbox text styling
 	border_style border; // checkbox border styling
@@ -75,7 +86,7 @@ struct checkbox_style
 	std::string to_string() const;
 };
 
-struct button_style
+struct button_style : style
 {
 	text_style text;	 // button text styling
 	border_style border; // button border styling
@@ -87,7 +98,7 @@ struct button_style
 	std::string to_string() const;
 };
 
-struct slider_style
+struct slider_style : style
 {
 	text_style text;	 // slider text styling
 	border_style border; // slider border styling
@@ -100,7 +111,7 @@ struct slider_style
 	std::string to_string() const;
 } inline default_slider_style{};
 
-struct text_entry_style
+struct text_entry_style : style
 {
 	text_style text;	 // text entry text style
 	text_style buf_text; // text entry buffer text style
@@ -114,7 +125,7 @@ struct text_entry_style
 	std::string to_string() const;
 };
 
-struct combo_box_style
+struct combo_box_style : style
 {
 	text_style text;	 // combo box text styling
 	border_style border; // combo box border styling
@@ -127,7 +138,7 @@ struct combo_box_style
 	std::string to_string() const;
 };
 
-struct color_picker_style
+struct color_picker_style : style
 {
 	text_style text;		  // color picker text styling
 	border_style border;	  // color picker border styling

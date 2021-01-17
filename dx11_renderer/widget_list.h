@@ -12,12 +12,23 @@
 // simple UI's can be made with 1 list the size of the window, but complex UI's should use multiple, especially if a lot of conditional renderering occurs
 //
 
+// a structure for finalized widget lists, this will be used to construct the widgets and bind them to style in the owned_styles list
+struct owned_widget
+{
+	widget wdgt;			   // the actual widget object
+	uint32_t owned_styles_idx; // the index the widget will have in the onwed styles list
+
+	owned_widget() = delete;
+	owned_widget(const widget& wdgt, uint32_t owned_styles_idx);
+};
+
 class widget_list
 {
 public:
 	widget_list();
 	widget_list(const vec2& top_left, const vec2& size);
 	widget_list(const vec2& top_left, const vec2& size, const mc_rect& background);
+	widget_list(const vec2& top_left, const vec2& size, const mc_rect& background, const std::vector<owned_widget>& owned_widgets, const std::vector<style>& owned_styles);
 
 	// add a single widget to the widget list
 	void add_widget(widget* p_widget);
@@ -43,6 +54,12 @@ public:
 	// activate/deactive the move mode of the list, lists in move mode will allow widgets to be moved by dragging, and widgets will not respond to input how they normally would
 	void set_move_mode(bool mode);
 
+	// toggle move mode based on its currents state
+	void toggle_move_mode();
+
+	// get the current movement mode
+	bool get_move_mode();
+
 	// handles input messages from the queue and submits widget geometry to the gpu
 	void draw_widgets();
 
@@ -56,8 +73,10 @@ private:
 	bool active;						  // if a widget list is active, the widgets will be drawn and inputs will be pushed into the queue, if not, it is "invisible"
 	bool move_mode;						  // if move mode is true, widgets in the list can be dragged around for repositioning
 
-	std::vector<widget*> widgets;		  // vector of widget ptrs the list contains
-	std::queue<widget_input> input_msgs;  // input message queue
+	std::vector<widget*> widgets;				// vector of widget ptrs the list contains
+	std::vector<owned_widget> owned_widgets;   // vector of widgets this instance owns
+	std::vector<style> owned_styles;				// vector of styles this instance owns
+	std::queue<widget_input> input_msgs;		// input message queue
 
 	// handle next input message in the queue, if no messages are present, the function just returns, called in draw_widgets() before drawing
 	void handle_next_input();

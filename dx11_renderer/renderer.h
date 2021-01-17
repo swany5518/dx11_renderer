@@ -63,7 +63,10 @@ public:
 	void draw();
 
 	// initialize renderer onto a window 
-	void initialize(HWND hwnd, const std::wstring& font_family = L"Consolas");
+	void initialize(HWND hwnd, const color& render_target_color = {}, const std::wstring& font_family = L"Consolas");
+
+	// set the rendering target background color
+	void set_render_target_color(const color& new_color);
 
 	// cleanup renderer
 	void cleanup();
@@ -145,6 +148,7 @@ private:
 
 	draw_list default_draw_list; // default draw list, we should only need 1 draw list. In the future we could add more
 	DirectX::XMMATRIX screen_projection;
+	color render_target_color;
 	std::wstring font;
 
 	// add a vertex to the draw list

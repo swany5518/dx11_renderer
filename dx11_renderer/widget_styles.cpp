@@ -3,6 +3,22 @@
 #include "widget_styles.h"
 
 //
+// style definitions
+//
+
+style::style() :
+	name()
+{ }
+
+style::style(const std::string& name) :
+	name(name)
+{ }
+
+std::string style::to_string(uint16_t indent_amt) const
+{ 
+	return "";
+}
+//
 // text_style definitions
 //
 
@@ -30,14 +46,18 @@ text_style::text_style(float font_size, float outline_thickness, const color& te
 	bg_clr(background_color)
 { }
 
-std::string text_style::to_string() const
+std::string text_style::to_string(uint16_t indent_amt) const
 {
-	return "text_style{\n" +
-		std::to_string(size) + ",\n" +
-		std::to_string(ol_thckns) + ",\n" +
-		clr.to_string()	+ ",\n" +
-		ol_clr.to_string() + ",\n" +
-		bg_clr.to_string() + " }";
+	std::string tab_str( indent_amt, '\t' );
+	std::string brace_str(indent_amt > 0 ? indent_amt - 1 : 0, '\t');
+
+	return brace_str + "text_style\n" + brace_str +									//text_style
+		"{\n" + tab_str +															//{
+		std::to_string(size) + ", " + std::to_string(ol_thckns) + ",\n" + tab_str +	//		14.000000, 1.000000,
+		clr.to_string() + ",\n" + tab_str +											//		{ 1.000000, 1.000000, 1.000000, 1.000000 },
+		ol_clr.to_string() + ",\n" + tab_str +										//		{ 0.000000, 0.000000, 0.000000, 1.000000 },
+		bg_clr.to_string() + "\n" + 												//		{ 0.000000, 0.000000, 0.000000, 0.000000 }
+		brace_str + "}";															//},
 }
 
 //
@@ -65,13 +85,18 @@ border_style::border_style(float thickness, float outline_thickness, const color
 	ol_clr(outline_color)
 { }
 
-std::string border_style::to_string() const
+std::string border_style::to_string(uint16_t indent_amt) const
 {
-	return "border_style{\n" +
-		std::to_string(thckns) + ",\n" +
-		std::to_string(ol_thckns) + ",\n" +
-		clr.to_string()	+ ",\n" +
-		ol_clr.to_string() + " }";
+	std::string tab_str(indent_amt, '\t');
+	std::string brace_str(indent_amt > 0 ? indent_amt - 1 : 0, '\t');
+
+	return brace_str + "border_style\n" + brace_str +									//border_style
+		"{\n" + tab_str +																//{
+		std::to_string(thckns) + ", " + std::to_string(ol_thckns) + ",\n" + tab_str	+	//		2.000000, 0.000000,																									
+		clr.to_string() + ",\n" + tab_str +												//		{ 0.000000, 0.000000, 0.000000, 1.000000 },
+		ol_clr.to_string() + "\n" +														//		{ 0.000000, 0.000000, 0.000000, 0.000000 }
+		brace_str + "}";																//},
+
 }
 
 //
@@ -99,13 +124,18 @@ mc_rect::mc_rect(const color& top_left, const color& top_right, const color& bot
 	br_clr(bottom_right)
 { }
 
-std::string mc_rect::to_string() const
+std::string mc_rect::to_string(uint16_t indent_amt) const
 {
-	return "mc_rect{\n" +
-		tl_clr.to_string() + ",\n" +
-		tr_clr.to_string() + ",\n" +
-		bl_clr.to_string() + ",\n" +
-		br_clr.to_string() + " }";
+	std::string tab_str(indent_amt, '\t');
+	std::string brace_str(indent_amt > 0 ? indent_amt - 1 : 0, '\t');
+
+	return brace_str + "mc_rect\n" + 			//mc_rect
+		brace_str + "{\n" + tab_str +			//{
+		tl_clr.to_string() + ",\n" + tab_str +	//		{ 0.500000, 0.500000, 0.500000, 0.500000 },
+		tr_clr.to_string() + ",\n" + tab_str +	//		{ 0.500000, 0.500000, 0.500000, 0.500000 },
+		bl_clr.to_string() + ",\n" + tab_str +	//		{ 0.500000, 0.500000, 0.500000, 0.500000 },
+		br_clr.to_string() + "\n" + 			//		{ 0.500000, 0.500000, 0.500000, 0.500000 }
+		brace_str + "}";						//}
 }
 
 //
@@ -182,10 +212,11 @@ slider_style::slider_style(const text_style& text, const border_style& border, c
 
 std::string slider_style::to_string() const
 {
-	return "slider_style{ " +
-		text.to_string() + ",\n" +
-		border.to_string() + ",\n" +
-		bg.to_string() + " }";
+	return "slider_style\n{ \n" +
+		text.to_string(2) + ",\n" +
+		border.to_string(2) + ",\n" +
+		bg.to_string(2) + ", \n" +
+		clr.to_string(2) + "\n}";
 }
 
 //

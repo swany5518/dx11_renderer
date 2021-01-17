@@ -35,7 +35,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
         wnd_pos = get_window_pos();
         break;
     case WM_MOUSEMOVE:
-        std::cout << "WM_MOUSEMOVE " << GET_X_LPARAM(lParam) << std::endl;
+        //std::cout << "WM_MOUSEMOVE " << GET_X_LPARAM(lParam) << std::endl;
         widgets.add_input_msg(widget_input{ vec2{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)} });
         break;
     case WM_LBUTTONDOWN:
@@ -43,7 +43,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
         widgets.add_input_msg(widget_input{ input_type::lbutton_down, vec2{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)} });
         break;
     case WM_LBUTTONUP:
-        std::cout << "WM_LBUTTONUP" << std::endl;
+        //std::cout << "WM_LBUTTONUP" << std::endl;
         ReleaseCapture();
         widgets.add_input_msg(widget_input{ input_type::lbutton_up, vec2{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)} });
         break;
@@ -59,16 +59,17 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
         //std::cout << "WM_SETCURSOR" << std::endl;
         break;
     case WM_NCHITTEST:
-        std::cout << "WM_HITTEST" << std::endl;
+        //std::cout << "WM_HITTEST" << std::endl;
         break;
     case WM_MOUSELEAVE:
-        std::cout << "WM_MOUSELEAVE" << std::endl;
+        //std::cout << "WM_MOUSELEAVE" << std::endl;
         break;
     case WM_NCMOUSELEAVE:
-        std::cout << "WM_NCMOUSELEAVE" << std::endl;
+        //std::cout << "WM_NCMOUSELEAVE" << std::endl;
         break;
     default:
-        std::cout << "WM: " << message << std::endl;
+        //std::cout << "WM: " << message << std::endl;
+        break;
     }
 
     return DefWindowProc(hWnd, message, wParam, lParam);
@@ -82,6 +83,7 @@ void xor_block(uintptr_t start, size_t amt, char* key, size_t key_size)
 
 int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
+    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE);
     AllocConsole();
     freopen("conin$" , "r", stdin);
     freopen("conout$", "w", stdout);
@@ -111,13 +113,41 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
     renderer.initialize(hWnd);
     widget::set_renderer(&renderer);
 
+    slider_style test_style{
+        text_style{ 
+            14.000000, 1.000000,
+            { 1.000000, 1.000000, 1.000000, 1.000000 },
+            { 0.000000, 0.000000, 0.000000, 1.000000 },
+            { 0.000000, 0.000000, 0.000000, 0.000000 } 
+        },
+        border_style{
+            2.000000, 0.000000,
+            { 0.000000, 0.000000, 0.000000, 1.000000 },
+            { 0.000000, 0.000000, 0.000000, 0.000000 } 
+        },
+        mc_rect{
+            { 0.000000, 0.000000, 0.000000, 0.000000 },
+            { 0.000000, 0.000000, 0.000000, 0.000000 },
+            { 0.000000, 0.000000, 0.000000, 0.000000 },
+            { 0.000000, 0.000000, 0.000000, 0.000000 } 
+        },
+        mc_rect{
+            { 0.500000, 0.500000, 0.500000, 0.500000 },
+            { 0.500000, 0.500000, 0.500000, 0.500000 },
+            { 0.500000, 0.500000, 0.500000, 0.500000 },
+            { 0.500000, 0.500000, 0.500000, 0.500000 } 
+        }
+    };
+
     float val = 1.f;
     slider_style style{ text_style{}, border_style{}, mc_rect{}, mc_rect{color{.5f, .5f, .5f, .5f}} };
-    slider<float> sldr{ vec2{ 600,500 }, vec2{ 100,20 }, L"lool", &val, 0.f, 1.f, &style };
+    slider<float> sldr{ vec2{ 600,500 }, vec2{ 200, 40 }, L"example slider", &val, 0.f, 1.f, &style };
+
     widgets.add_widget(&sldr);
    
     widgets = get_slider_style_edit_list(&style);
     widgets.add_widget(&sldr);
+    widgets.set_move_mode(true);
 
     color red{ 1.f, 0.f, 0.f, 1.f };
     color green{ 0.f, 1.f, 0.f, 1.f };
@@ -136,6 +166,10 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
     };
 
     MSG msg_;
+
+    auto time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch());
+    int frame_count = 0;
+    int last_second_frames = 0;
 
     while (TRUE)
     {
@@ -174,8 +208,23 @@ int wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
         //btn.draw();
         
         widgets.draw_widgets();
+        renderer.add_text({ 1000,25 }, { 50,20 }, L"framerate: " + std::to_wstring(last_second_frames), { 1.f }, 16.f);
+        if (widgets.get_move_mode())
+            renderer.add_text_with_bg({ 1000,0 }, { 50,20 }, L"Moving Enabled", { 1.f, 0.f, 0.f, 1.f }, { 0.f, 0.f, 0.f, 1.f }, 24.f);
         renderer.draw();
+        frame_count++;
+        auto second = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now().time_since_epoch());
+        if (second.count() - time.count() >= 1)
+        {
+            last_second_frames = frame_count;
+            frame_count = 0;
+            time = second;
+        }
 
+        if (GetAsyncKeyState(VK_INSERT) & 0x1)
+            widgets.toggle_move_mode();
+        if (GetAsyncKeyState(VK_HOME) & 0x1)
+            std::cout << widgets.to_string() << std::endl;
     }
     
     //std::cin.get();

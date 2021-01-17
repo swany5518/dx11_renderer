@@ -6,7 +6,7 @@
 // [public] renderer utilities
 //
 
-void renderer::initialize(HWND hwnd, const std::wstring& font_family)
+void renderer::initialize(HWND hwnd, const color& render_target_color, const std::wstring& font_family)
 {
 	font = font_family;
 	setup_device_and_swapchain(hwnd);
@@ -21,6 +21,7 @@ void renderer::initialize(HWND hwnd, const std::wstring& font_family)
 	setup_font_renderer(font);
 	setup_screen_projection();
 	setup_font_renderer(font);
+	this->render_target_color = render_target_color;
 
 	initialized = true;
 }
@@ -36,17 +37,6 @@ void renderer::draw()
 	// only draw draw list vertices if size > 0
 	if (default_draw_list.vertices.size())
 	{
-		size_t count = 0u;
-		float z_order = 0.f;
-		for (auto& batch : default_draw_list.batch_list)
-		{
-			for (auto i = 0u; i < batch.vertex_count; ++i)
-				default_draw_list.vertices[count + i].z = z_order;
-
-			count += batch.vertex_count;
-			z_order += 0.01f;
-		}
-
 		// map our vertex buffer 
 		D3D11_MAPPED_SUBRESOURCE mapped_resource;
 		if (FAILED(p_device_context->Map(p_vertex_buffer, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &mapped_resource)))
@@ -65,13 +55,18 @@ void renderer::draw()
 			buffer_index += batch.vertex_count;
 		}
 	}
-
+	
 	p_font_wrapper->Flush(p_device_context);
 	p_font_wrapper->DrawGeometry(p_device_context, default_draw_list.p_text_geometry, nullptr, nullptr, FW1_RESTORESTATE);
 
 	default_draw_list.clear();
 
 	p_swapchain->Present(1, 0);
+}
+
+void renderer::set_render_target_color(const color& new_color)
+{
+	render_target_color = new_color;
 }
 
 void renderer::cleanup()
@@ -530,7 +525,8 @@ renderer::renderer() :
 	p_font_factory(nullptr),
 	p_font_wrapper(nullptr),
 	default_draw_list(),
-	screen_projection()
+	screen_projection(),
+	render_target_color()
 { }
 
 // 
@@ -556,6 +552,8 @@ void renderer::setup_device_and_swapchain(HWND hwnd)
 	swapchain_desc.Windowed = TRUE;                                   // windowed/full-screen mode
 	swapchain_desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;    // allow full-screen switching
 	swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+	swapchain_desc.BufferDesc.RefreshRate.Numerator = 60;
+	swapchain_desc.BufferDesc.RefreshRate.Numerator = 1;
 
 	if (FAILED(D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, NULL, NULL, NULL, D3D11_SDK_VERSION, &swapchain_desc, &p_swapchain, &p_device, NULL, &p_device_context)))
 		handle_error("setup_device_and_swapchain - failed to create device and swapchain");

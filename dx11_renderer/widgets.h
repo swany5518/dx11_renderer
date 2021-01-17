@@ -17,6 +17,7 @@ struct widget
 	vec2 size;				// widget width and height
 	std::wstring label;		// widget label 
 	vec2 label_pos;			// widget label position relative to top left
+	style* p_style;         // pointer to the widgets style struct
 	mouse_state mouse_info; // widget mouse information (dragged, clicked, hovered, clicking, etc.)
 	bool active;			// disable functionality of a widget
 
@@ -63,7 +64,12 @@ struct widget
 
 	widget() = delete;
 	widget(const vec2& top_left, const vec2& size, const std::wstring& label);
+	widget(const vec2& top_left, const vec2& size, const std::wstring& label, style* p_style);
 	widget(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos);
+	widget(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos, style* p_style);
+
+	// set the widgets style pointer
+	void set_style(style* p_style);
 
 	// determine if an widget contains a position
 	bool contains(const vec2& pos);
@@ -80,6 +86,7 @@ struct widget
 	virtual void on_drag(const vec2& new_position);
 	virtual void on_widget_move(const vec2& new_position);
 	virtual void on_key_down(char key);
+	virtual std::string to_string(uint16_t indent_amt);
 
 	// virtual widget type function
 	virtual widget_type get_type();
@@ -89,7 +96,6 @@ struct widget
 struct checkbox : widget
 {
 	bool* value;
-	checkbox_style* style;
 
 	checkbox() = delete;
 	checkbox(const vec2& top_left, const vec2& size, const std::wstring& label, bool* value, checkbox_style* style);
@@ -97,19 +103,21 @@ struct checkbox : widget
 	void on_lbutton_up(const vec2& mouse_position);
 	void draw();
 	widget_type get_type();
+
+	std::string to_string(uint16_t indent_amt);
 };
 
 // simple button widget for event triggering
 struct button : widget
 {
-	button_style* style;
-
 	button() = delete;
 	button(const vec2& top_left, const vec2& size, const std::wstring& label, button_style* style);
 	button(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos, button_style* style);
 	void draw();
 
 	widget_type get_type();
+
+	std::string to_string(uint16_t indent_amt);
 };
 
 // simple slider widget for floating point and integer types
@@ -119,30 +127,26 @@ struct slider : widget
 	Ty* value;
 	Ty min_value;
 	Ty max_value;
-	slider_style* style;
 
 	slider(const vec2& top_left, const vec2& size, const std::wstring& label, Ty* value, Ty min, Ty max, slider_style* style) :
-		widget(top_left, size, label),
+		widget(top_left, size, label, style),
 		value(value),
 		min_value(min),
-		max_value(max),
-		style(style)
+		max_value(max)
 	{ }
 
 	slider(const vec2& top_left, const vec2& size, const std::wstring& label, Ty min, Ty max, slider_style* style) :
-		widget(top_left, size, label),
+		widget(top_left, size, label, style),
 		value(nullptr),
 		min_value(min),
-		max_value(max),
-		style(style)
+		max_value(max)
 	{ }
 
 	slider(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos, Ty* value, Ty min, Ty max, slider_style* style) :
-		widget(top_left, size, label, label_pos),
+		widget(top_left, size, label, label_pos, style),
 		value(value),
 		min_value(min),
-		max_value(max),
-		style(style)
+		max_value(max)
 	{ }
 
 	Ty get_range()
@@ -186,8 +190,9 @@ struct slider : widget
 
 	void draw()
 	{
+		auto style = static_cast<slider_style*>(p_style);
 		// calculate the slider width
-		float scaled_width = static_cast<float>(*value - min_value) / static_cast<float>(get_range()) * size.x;
+		auto scaled_width = static_cast<float>(*value - min_value) / static_cast<float>(get_range()) * size.x;
 
 		// add the background color
 		p_renderer->add_rect_filled_multicolor(top_left, size, style->bg.tl_clr, style->bg.tr_clr, style->bg.bl_clr, style->bg.br_clr);
@@ -206,6 +211,18 @@ struct slider : widget
 	{
 		return widget_type::slider;
 	}
+
+	std::string to_string(uint16_t indent_amt)
+	{
+		std::string tab_str(indent_amt, '\t');
+		std::string brace_str(indent_amt > 0 ? indent_amt - 1 : 0, '\t');
+
+		return brace_str + "slider</*Ty TYPE HERE*/float>" + '\n' + brace_str + "{\n" +
+			tab_str + top_left.to_string() + ", " + size.to_string() + "\n" +
+			tab_str + "L\"" + std::string(label.begin(), label.end()) + "\"," + label_pos.to_string() + ",\n" + 
+			tab_str + "/*Ty VALUE PTR HERE*/nullptr," + std::to_string(min_value) + ',' + std::to_string(max_value) + " nullptr\n" +
+			brace_str + '}';
+	}
 };
 
 // simple text entry
@@ -214,7 +231,6 @@ struct text_entry : widget
 	std::wstring buffer;	  // string containing the text entry input
 	uint32_t max_buffer_size; // max length of the buffer
 	vec2 buffer_offset;	      // buffer position relative to top left
-	text_entry_style* style;  // text entry style
 
 	text_entry(const vec2& top_left, const vec2& size, const std::wstring& label, text_entry_style* style, uint32_t max_buffer_size = 128u, const vec2& buffer_offset = {0.f, 0.f});
 	text_entry(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos, text_entry_style* style, uint32_t max_buffer_size = 128u, const vec2& buffer_offset = { 0.f, 0.f });
@@ -223,13 +239,13 @@ struct text_entry : widget
 	void draw();
 
 	widget_type get_type();
+
+	std::string to_string(uint16_t indent_amt);
 };
 
 // widget commonly used to place multiple grouped widgets inside
 struct combo_box : widget
 {
-	combo_box_style* style;
-
 	combo_box(const vec2& top_left, const vec2& size, const std::wstring& label, combo_box_style* style);
 
 	combo_box(const vec2& top_left, const vec2& size, const std::wstring& label, const vec2& label_pos, combo_box_style* style);
@@ -237,12 +253,13 @@ struct combo_box : widget
 	void draw();
 
 	widget_type get_type();
+
+	std::string to_string(uint16_t indent_amt);
 };
 
 // edit a color with rgba sliders
 struct color_picker : widget
 {
-	color_picker_style* style;
 	color* p_color;
 
 	float border_padding;
@@ -270,4 +287,6 @@ struct color_picker : widget
 	void draw();
 
 	widget_type get_type();
+
+	std::string to_string(uint16_t indent_amt);
 };
