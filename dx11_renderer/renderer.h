@@ -118,7 +118,13 @@ public:
 
 	// add text with background around the smallest rect containing the text
 	void add_text_with_bg(const vec2& top_left, const vec2& size, const std::wstring& text, const color& text_color, const color& bg_color, float font_size, text_align text_flags = text_align::left_top);
+	
+	// printf style text print, no backround
+	void printf ( const vec2& top_left , const vec2& size , const color& color , float font_size , text_align text_flags , const wchar_t* text , ... );
 
+	// printf style text print, with backround
+	void printf_with_bg ( const vec2& top_left , const vec2& size , const color& text_color , const color& bg_color , float font_size , text_align text_flags , const wchar_t* text , ... );
+	
 	// add outlined text, this is not done in a good way so it could affect performance
 	void add_outlined_text(const vec2& top_left, const vec2& size, const std::wstring& text, const color& text_color, const color& outline_color, float font_size, float outline_size = 1.f, text_align text_flags = text_align::left_top);
 
