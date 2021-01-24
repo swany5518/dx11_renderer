@@ -379,6 +379,17 @@ void renderer::add_text(const vec2& top_left, const vec2& size, const std::wstri
 	p_font_wrapper->AnalyzeString(nullptr, text.c_str(), L"Consolas", font_size, &rect, color.to_hex_abgr(), final_flags, default_draw_list.p_text_geometry);
 }
 
+void renderer::printf ( const vec2& top_left , const vec2& size  , const color& color , float font_size , text_align text_flags , const wchar_t* text , ... ) 
+{
+	va_list va;
+	va_start ( va , text );
+	wchar_t buff [ 1024 ] { };
+	_vsnwprintf_s ( buff , sizeof ( buff ) , text , va );
+	std::wstring wtext ( buff );
+
+	renderer::add_text ( top_left , size , wtext , color , font_size , text_flags );
+}
+
 void renderer::add_text_with_bg(const vec2& top_left, const vec2& size, const std::wstring& text, const color& text_color, const color& bg_color, float font_size, text_align text_flags)
 {
 	if (text.empty())
@@ -396,6 +407,16 @@ void renderer::add_text_with_bg(const vec2& top_left, const vec2& size, const st
 	add_rect_filled({text_box.Left - 1.f, text_box.Top}, { text_box.Right - text_box.Left + 1.f, text_box.Bottom - text_box.Top }, bg_color);
 
 	p_font_wrapper->AnalyzeString(nullptr, text.c_str(), L"Consolas", font_size, &rect, text_color.to_hex_abgr(), final_flags, default_draw_list.p_text_geometry);
+}
+
+void renderer::printf_with_bg ( const vec2& top_left , const vec2& size , const color& text_color , const color& bg_color , float font_size , text_align text_flags , const wchar_t* text , ... )
+{
+	va_list va;
+	va_start ( va , text );
+	wchar_t buff [ 1024 ] { };
+	_vsnwprintf_s ( buff , sizeof ( buff ) , text , va );
+	std::wstring wtext ( buff );
+	add_text_with_bg ( top_left , size , wtext , text_color , bg_color , font_size , text_flags );
 }
 
 void renderer::add_outlined_text(const vec2& top_left, const vec2& size, const std::wstring& text, const color& text_color, const color& outline_color, float font_size, float outline_size, text_align flags)
