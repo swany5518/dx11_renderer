@@ -31,8 +31,7 @@ void renderer::draw()
 	if (!initialized)
 		handle_error("draw - renderer is not initialized, did you call initialize()?");
 
-	float background[] = { 0.f, 0.f, 0.5f, 1.f };
-	p_device_context->ClearRenderTargetView(p_backbuffer, background);
+	p_device_context->ClearRenderTargetView(p_backbuffer, &render_target_color.r);
 
 	// only draw draw list vertices if size > 0
 	if (default_draw_list.vertices.size())
@@ -71,6 +70,8 @@ void renderer::set_render_target_color(const color& new_color)
 
 void renderer::cleanup()
 {
+	p_device_context->ClearRenderTargetView(p_backbuffer, &render_target_color.r);
+	p_swapchain->Present(1, 0);
 	initialized = false;
 }
 
@@ -376,7 +377,7 @@ void renderer::add_text(const vec2& top_left, const vec2& size, const std::wstri
 	auto final_flags = static_cast<uint32_t>(text_flags) | FW1_NOFLUSH | FW1_NOWORDWRAP;
 
 	FW1_RECTF rect{ top_left.x, top_left.y, top_left.x + size.x, top_left.y + size.y };
-	p_font_wrapper->AnalyzeString(nullptr, text.c_str(), L"Consolas", font_size, &rect, color.to_hex_abgr(), final_flags, default_draw_list.p_text_geometry);
+	p_font_wrapper->AnalyzeString(nullptr, text.c_str(), font.c_str(), font_size, &rect, color.to_hex_abgr(), final_flags, default_draw_list.p_text_geometry);
 }
 
 void renderer::add_text_with_bg(const vec2& top_left, const vec2& size, const std::wstring& text, const color& text_color, const color& bg_color, float font_size, text_align text_flags)
@@ -391,11 +392,11 @@ void renderer::add_text_with_bg(const vec2& top_left, const vec2& size, const st
 
 	// rect for drawing background behind text
 	FW1_RECTF text_box_rect{ top_left.x, top_left.y, top_left.x, top_left.y };
-	FW1_RECTF text_box = p_font_wrapper->MeasureString(text.c_str(), L"Consolas", font_size, &text_box_rect, final_flags);
+	FW1_RECTF text_box = p_font_wrapper->MeasureString(text.c_str(), font.c_str(), font_size, &text_box_rect, final_flags);
 
 	add_rect_filled({text_box.Left - 1.f, text_box.Top}, { text_box.Right - text_box.Left + 1.f, text_box.Bottom - text_box.Top }, bg_color);
 
-	p_font_wrapper->AnalyzeString(nullptr, text.c_str(), L"Consolas", font_size, &rect, text_color.to_hex_abgr(), final_flags, default_draw_list.p_text_geometry);
+	p_font_wrapper->AnalyzeString(nullptr, text.c_str(), font.c_str(), font_size, &rect, text_color.to_hex_abgr(), final_flags, default_draw_list.p_text_geometry);
 }
 
 void renderer::add_outlined_text(const vec2& top_left, const vec2& size, const std::wstring& text, const color& text_color, const color& outline_color, float font_size, float outline_size, text_align flags)
@@ -434,7 +435,7 @@ void renderer::add_outlined_text_with_bg(const vec2& top_left, const vec2& size,
 
 	// rect for drawing background behind text
 	FW1_RECTF text_box_rect{ top_left.x, top_left.y, top_left.x, top_left.y };
-	FW1_RECTF text_box = p_font_wrapper->MeasureString(text.c_str(), L"Consolas", font_size, &text_box_rect, final_flags);
+	FW1_RECTF text_box = p_font_wrapper->MeasureString(text.c_str(), font.c_str(), font_size, &text_box_rect, final_flags);
 
 	add_rect_filled({ text_box.Left - outline_size, text_box.Top }, { text_box.Right - text_box.Left + outline_size + 1.f, text_box.Bottom - text_box.Top }, bg_color);
 
@@ -489,6 +490,57 @@ void renderer::add_3d_wire_frame(const vec2& top_left, const vec3& size, const c
 	add_polyline(points, sizeof(points) / sizeof(vec2), frame_color);
 }
 
+void renderer::add_cornered_frame(const vec2& top_left, const vec2& size, const color& color_, const color& ol_color, float x_pct, float y_pct, float thickness, float ol_thickness)
+{
+	const vec2 vrt_ol_size{ ol_thickness * 2.f + thickness, size.y * y_pct };
+	const vec2 hrz_ol_size{ size.x * x_pct - vrt_ol_size.x/* - ol_thickness*/, vrt_ol_size.x };
+	const vec2 vrt_size = vrt_ol_size - (ol_thickness * 2.f);
+	const vec2 hrz_size{hrz_ol_size.x, vrt_size.x};
+
+	// top left shadow
+	add_rect_filled(top_left, vrt_ol_size, ol_color);
+	add_rect_filled(vec2{ top_left.x + vrt_ol_size.x, top_left.y }, hrz_ol_size, ol_color);
+
+	// top_left rects
+	add_rect_filled(top_left + ol_thickness, vrt_size, color_);
+	add_rect_filled(vec2{ top_left.x + vrt_ol_size.x - ol_thickness, top_left.y + ol_thickness }, hrz_size, color_);
+
+	// top_right shadow
+	vec2 top_right{ top_left.x + size.x - vrt_ol_size.x, top_left.y };
+	add_rect_filled(top_right, vrt_ol_size, ol_color);
+	add_rect_filled(vec2{ top_right.x - hrz_ol_size.x, top_left.y }, hrz_ol_size, ol_color);
+
+	// top_right rects
+	top_right = top_right + ol_thickness;
+	add_rect_filled(top_right, vrt_size, color_);
+	add_rect_filled(vec2{ top_right.x - hrz_size.x, top_right.y }, hrz_size, color_);
+
+	vec2 btm_vrt_ol_size{ hrz_ol_size.y, hrz_ol_size.x };
+	vec2 btm_hrz_ol_size{ vrt_ol_size.y, vrt_ol_size.x };
+	vec2 btm_vrt_size{ hrz_size.y, hrz_size.x };
+	vec2 btm_hrz_size{ vrt_size.y, vrt_size.x };
+
+	// bottom_left shadow
+	vec2 btm_left{ top_left.x, top_left.y + size.y - vrt_size.x };
+	add_rect_filled(vec2{ btm_left.x, btm_left.y - btm_vrt_ol_size.y }, btm_vrt_ol_size, ol_color);
+	add_rect_filled(btm_left, btm_hrz_ol_size, ol_color);
+
+	// bottom_left rects
+	btm_left = btm_left + ol_thickness;
+	add_rect_filled(vec2{ btm_left.x, btm_left.y - btm_vrt_size.y }, btm_vrt_size, color_);
+	add_rect_filled(btm_left, btm_hrz_size, color_);
+
+	// bottom right shadow
+	vec2 btm_right{ top_left.x + size.x - btm_vrt_ol_size.x, top_left.y + size.y - btm_hrz_ol_size.y };
+	add_rect_filled(vec2{ btm_right.x, btm_right.y - btm_vrt_ol_size.y }, btm_vrt_ol_size, ol_color);
+	add_rect_filled(vec2{ btm_right.x - btm_hrz_ol_size.x + vrt_ol_size.x, btm_right.y }, btm_hrz_ol_size, ol_color);
+
+	// bottom right rects
+	btm_right = btm_right + ol_thickness;
+	add_rect_filled(vec2{ btm_right.x, btm_right.y - btm_vrt_size.y }, btm_vrt_size, color_);
+	add_rect_filled(vec2{ btm_right.x - btm_hrz_size.x + vrt_size.x, btm_right.y }, btm_hrz_size, color_);
+}
+
 void renderer::add_outlined_frame(const vec2& top_left, const vec2& size, float thickness, float outline_thickness, const color& frame_color, const color& outline_color)
 {
 	// frame shadow
@@ -503,6 +555,11 @@ vec2 renderer::measure_text(const std::wstring& text, float text_size)
 	FW1_RECTF in{};
 	auto rect = p_font_wrapper->MeasureString(text.c_str(), font.c_str(), text_size, &in, FW1_LEFT | FW1_NOWORDWRAP);
 	return { rect.Right - rect.Left, rect.Bottom - rect.Top };
+}
+
+void renderer::set_font(const std::wstring& new_font)
+{
+	font = new_font;
 }
 
 //

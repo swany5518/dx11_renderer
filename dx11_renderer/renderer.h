@@ -104,6 +104,9 @@ public:
 	// add a thin frame made out of rects
 	void add_frame(const vec2& top_left, const vec2& size, float thickness, const color& frame_color);
 
+	// add corners around a frame
+	void add_cornered_frame(const vec2& top_left, const vec2& size, const color& color_, const color& ol_color, float x_pct, float y_pct, float thickness, float ol_thickness);
+
 	// add a wire frame (constructs frame from lines instead of rects)
 	void add_wire_frame(const vec2& top_left, const vec2& size, const color& frame_color);
 
@@ -127,6 +130,8 @@ public:
 
 	// see how much space text will take up, returns the height and width text will take up
 	vec2 measure_text(const std::wstring& text, float text_size);
+
+	void set_font(const std::wstring& new_font);
 
 private:
 	bool initialized;

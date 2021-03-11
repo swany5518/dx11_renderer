@@ -64,7 +64,7 @@ vec2 vec2::operator*(const vec2& other) const
 
 std::string vec2::to_string() const
 {
-	return "{ " + std::to_string(x) + ", " + std::to_string(y) + " }";
+	return "{ " + std::to_string(x) + "f, " + std::to_string(y) + "f }";
 }
 
 bool vec2::higher_or_leftmost(const vec2& other) const

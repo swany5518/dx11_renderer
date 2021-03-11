@@ -1,4 +1,2 @@
-C:\FW1FontWrapper\Debug\x64\FW1FontWrapper.pdb
-C:\FW1FontWrapper\FW1FontWrapper\Debug\x64\FW1FontWrapper.pdb
 C:\Users\Aswan\Documents\GitHub\dx11_renderer\Debug\x64\FW1FontWrapper.pdb
 C:\Users\Aswan\Documents\GitHub\dx11_renderer\FW1FontWrapper\Debug\x64\FW1FontWrapper.pdb
